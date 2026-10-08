@@ -1,0 +1,1924 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Timeline Keeper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: chronicle workbench. Header, a stage that shows either the zoomable timeline or a month grid, then the event ledger and a detail folio side by side. */
+:root{
+  --bg:#e8ecf1; --surface:#f7f8fa; --raised:#ffffff; --ink:#1b2130; --muted:#5a6375; --line:#cdd4de; --grid:#e2e6ec; --axis:#6d7586;
+  --accent:#3647a8; --accent-ink:#ffffff; --accent-soft:#dde2f6; --danger:#b3261e; --warn-bg:#fff1d0; --warn-ink:#6b4a00;
+  --secret:#8a4b08; --secret-soft:#fbe9d0;
+  --band-op:.11; --shadow:0 12px 32px rgba(20,28,48,.20);
+  --f-display:"Alegreya SC","Palatino Linotype",Georgia,serif;
+  --f-body:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1219; --surface:#161a23; --raised:#1d2230; --ink:#e4e7ee; --muted:#98a1b3; --line:#2b3240; --grid:#1f2532; --axis:#7e879a;
+    --accent:#8d9cff; --accent-ink:#10153a; --accent-soft:#252c4c; --danger:#ff8a80; --warn-bg:#3a2e12; --warn-ink:#f3d58c;
+    --secret:#f0b36a; --secret-soft:#3a2a14;
+    --band-op:.17; --shadow:0 12px 32px rgba(0,0,0,.55); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1219; --surface:#161a23; --raised:#1d2230; --ink:#e4e7ee; --muted:#98a1b3; --line:#2b3240; --grid:#1f2532; --axis:#7e879a;
+  --accent:#8d9cff; --accent-ink:#10153a; --accent-soft:#252c4c; --danger:#ff8a80; --warn-bg:#3a2e12; --warn-ink:#f3d58c;
+  --secret:#f0b36a; --secret-soft:#3a2a14;
+  --band-op:.17; --shadow:0 12px 32px rgba(0,0,0,.55); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{height:100%;display:grid;grid-template-rows:auto auto minmax(280px,1fr) minmax(230px,38%);gap:10px;padding-inline:16px;padding-block:12px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;margin:0;line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.spacer{flex:1}
+.group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);background:var(--raised);border-radius:7px;cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--axis)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--danger)}
+.btn.danger.armed{background:var(--danger);border-color:var(--danger);color:var(--raised)}
+.btn[aria-pressed="true"]{background:var(--secret-soft);border-color:var(--secret);color:var(--secret)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn svg,.icon-btn svg{width:16px;height:16px;flex:none}
+.icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);background:var(--raised);border-radius:7px;cursor:pointer;padding:0}
+.icon-btn:hover{border-color:var(--axis)}
+.icon-btn.sm{width:28px;height:28px}
+.icon-btn:disabled{opacity:.4;cursor:default}
+select.world{height:34px;border:1px solid var(--line);background:var(--raised);border-radius:7px;padding:0 8px;font-weight:600;max-width:240px}
+
+.now-chip{display:inline-flex;align-items:stretch;border:1px solid var(--accent);border-radius:7px;overflow:hidden;height:34px;background:var(--accent-soft)}
+.now-chip button{border:0;background:transparent;cursor:pointer;padding:0 8px;display:grid;place-items:center}
+.now-chip .now-label{padding:0 10px;display:flex;flex-direction:column;justify-content:center;line-height:1.1;text-align:left}
+.now-chip .now-label span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.now-chip .now-label b{font-family:var(--f-mono);font-size:12px;font-weight:500}
+.now-chip button svg{width:15px;height:15px}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:7px;padding:6px 10px;font-size:13px}
+.player-banner{background:var(--secret-soft);color:var(--secret);border:1px solid var(--secret);border-radius:7px;padding:5px 10px;font-size:13px;font-weight:600}
+
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--raised)}
+.seg button{border:0;background:transparent;padding:0 10px;height:32px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.seg button svg{width:15px;height:15px}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink)}
+.range{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.month-label{font-family:var(--f-display);font-weight:700;font-size:17px;min-width:9ch;text-align:center}
+.hint{font-size:12.5px;color:var(--muted)}
+
+.stage{display:grid;min-height:0;min-width:0}
+.stage>*{grid-area:1/1;min-height:0;min-width:0}
+.tl-wrap{position:relative;overflow-x:hidden;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.tl-wrap.dragging{cursor:grabbing}
+.tl-wrap.on-axis{cursor:crosshair}
+.tl-wrap.on-edge,.tl-wrap.on-edge svg .ev{cursor:ew-resize}
+.tl-wrap.moving,.tl-wrap.moving svg .ev{cursor:grabbing}
+.tl-gutter{position:absolute;left:0;top:0;width:168px;pointer-events:none;z-index:2}
+.gut-head,.gut-row{position:absolute;left:0;width:168px;pointer-events:auto;display:flex;align-items:center;gap:6px;padding:0 8px;background:color-mix(in srgb,var(--surface) 92%,transparent);border-right:1px solid var(--line)}
+.gut-head{height:26px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.gut-head button{white-space:nowrap;border:0;background:transparent;cursor:pointer;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:2px 4px;border-radius:4px}
+.gut-head button:hover{color:var(--ink);background:var(--accent-soft)}
+.gut-head .grow{flex:1;text-align:left}
+.gut-row{height:30px;cursor:pointer;border-radius:0 6px 6px 0}
+.gut-row:hover{background:var(--accent-soft)}
+.gut-row.focus{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.gut-row .ev-ico{width:20px;height:20px}
+.gut-row .ev-ico svg{width:12px;height:12px}
+.gut-name{flex:1;min-width:0;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gut-age{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.ph-row{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2.4fr) 42px 28px;gap:6px;align-items:center}
+@media (max-width:640px){.ph-row{grid-template-columns:minmax(0,1fr) 42px 28px}.ph-row .datef{grid-column:1/-1;grid-row:2}}
+.drag-tip{position:fixed;z-index:45;pointer-events:none;background:var(--ink);color:var(--bg);font-family:var(--f-mono);font-size:11.5px;padding:4px 8px;border-radius:6px;white-space:nowrap;box-shadow:var(--shadow)}
+.tl-ghost{position:absolute;height:26px;border-radius:6px;background:var(--accent-soft);border:2px dashed var(--accent);pointer-events:none;display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:11px;color:var(--accent);white-space:nowrap;overflow:visible}
+.tl-ghost span{background:var(--raised);padding:1px 6px;border-radius:4px;border:1px solid var(--accent);transform:translateY(-24px)}
+.tl-wrap svg{display:block}
+.tl-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);pointer-events:none;padding:20px}
+svg .grid{stroke:var(--grid);stroke-width:1}
+svg .axis{stroke:var(--axis);stroke-width:3;stroke-linecap:round}
+svg .tick{stroke:var(--axis);stroke-width:1.5}
+svg .tickdot{fill:var(--axis)}
+svg .ticklbl{fill:var(--muted);font-family:var(--f-mono);font-size:10.5px;font-variant-numeric:tabular-nums}
+svg .ticklbl.major{fill:var(--ink);font-weight:500;font-size:11.5px}
+svg .nowline{stroke:var(--accent);stroke-width:2;stroke-dasharray:6 5}
+svg .nowpill{fill:var(--accent)}
+svg .nowtxt{fill:var(--accent-ink);font-family:var(--f-mono);font-size:11px;font-weight:500}
+svg .sesline{stroke:var(--muted);stroke-width:1;stroke-dasharray:2 3}
+svg .seslbl{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+svg .sectlbl{fill:var(--muted);font-family:var(--f-body);font-size:10.5px;font-weight:700;letter-spacing:.12em}
+svg .pilltxt{font-family:var(--f-body);font-size:12.5px;font-weight:500}
+svg .lanetxt{font-family:var(--f-body);font-size:12px;font-weight:500}
+svg .striptxt{font-family:var(--f-body);font-size:11px;font-weight:500;font-style:italic}
+svg .ev{cursor:pointer}
+svg .ev:hover .pill{filter:brightness(1.12)}
+svg .sel-ring{fill:none;stroke:var(--ink);stroke-width:2}
+svg .relline{fill:none;stroke:var(--accent);stroke-width:2}
+svg .arrowhead{fill:var(--accent)}
+svg .dim{opacity:.22}
+
+.mv{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px;display:flex;flex-direction:column;gap:10px}
+.mv-extra{flex:none;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.mv-extra .lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted);margin-right:4px}
+.mv-grid{flex:none;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mv-head{background:var(--raised);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted);padding:6px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv-cell{background:var(--raised);min-height:96px;padding:5px 6px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.mv-cell.pad{background:var(--surface)}
+.mv-cell.now{box-shadow:inset 0 0 0 2px var(--accent)}
+.mv-num{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:4px}
+.mv-cell.now .mv-num b{color:var(--accent)}
+.mv-bars{display:flex;flex-direction:column;gap:2px}
+.mv-bars span{height:4px;border-radius:2px;display:block}
+.mv-item{display:flex;align-items:center;gap:4px;border:0;border-radius:4px;padding:1px 6px;font-size:12px;font-weight:500;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;max-width:100%;min-width:0}
+.mv-item svg{width:12px;height:12px;flex:none}
+.mv-item span{overflow:hidden;text-overflow:ellipsis}
+.mv-item.soft{background:transparent!important;border:1px dashed currentColor}
+.mv-item[aria-current="true"]{outline:2px solid var(--ink);outline-offset:1px}
+.mv-more{font-size:11.5px;color:var(--muted)}
+.mv-empty{padding:30px;text-align:center;color:var(--muted)}
+
+.panes{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;min-height:0}
+.pane{border:1px solid var(--line);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;min-height:0;min-width:0}
+.pane-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.pane-head h2{font-family:var(--f-display);font-size:17px;margin:0;font-weight:700;letter-spacing:.02em}
+.count{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.search{position:relative;flex:1;min-width:160px}
+.search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)}
+.search input{width:100%;height:32px;border:1px solid var(--line);border-radius:7px;background:var(--raised);padding:0 10px 0 30px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);align-items:center}
+.filters select{height:26px;border:1px solid var(--line);border-radius:13px;background:var(--raised);padding:0 8px;font-size:12.5px;max-width:170px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 8px;border-radius:13px;border:1px solid var(--line);background:var(--raised);cursor:pointer;font-size:12.5px;font-weight:500}
+.chip i{width:10px;height:10px;border-radius:50%;display:block}
+.chip[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
+.chip.manage{border-style:dashed;color:var(--muted)}
+.list{overflow:auto;min-height:0;flex:1;padding:4px}
+.ev-line{display:flex;align-items:center;gap:4px}
+.ev-row{flex:1;min-width:0;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;text-align:left;border:0;background:transparent;border-radius:7px;padding:6px 8px;cursor:pointer}
+.ev-row:hover{background:var(--accent-soft)}
+.ev-row[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.ev-edit{opacity:.55;border-color:transparent;background:transparent}
+.ev-line:hover .ev-edit,.ev-edit:focus-visible{opacity:1;border-color:var(--line);background:var(--raised)}
+.ev-ico{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ev-ico svg{width:15px;height:15px}
+.ev-ico.period{border-radius:7px}
+.ev-ico.life{border-radius:50% 50% 7px 7px}
+.ev-main{min-width:0;display:flex;flex-direction:column}
+.ev-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-date{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.ev-side{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0}
+.ev-cat{font-size:12px;color:var(--muted);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding:0 6px;border-radius:9px;white-space:nowrap}
+.badge.secret{background:var(--secret-soft);color:var(--secret)}
+.badge.ses{background:var(--accent-soft);color:var(--accent)}
+.list-empty{padding:24px 16px;color:var(--muted);text-align:center}
+
+.detail{overflow:auto;min-height:0;flex:1;padding:16px 18px}
+.detail .kicker{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.detail h3{font-family:var(--f-display);font-size:24px;line-height:1.15;margin:4px 0 10px;text-wrap:balance;display:flex;gap:10px;align-items:center}
+.detail h3 .ev-ico{width:34px;height:34px}
+.detail h3 .ev-ico svg{width:18px;height:18px}
+.facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 14px;margin:0 0 12px;font-size:14px}
+.facts dt{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding-top:2px}
+.facts dd{margin:0;font-family:var(--f-mono);font-size:12.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.facts dd.plain{font-family:var(--f-body);font-size:14px}
+.tags,.chips-inline{display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:12px;padding:1px 8px;border-radius:10px;background:var(--accent-soft)}
+.link-chip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:1px 8px 1px 6px;border-radius:10px;border:1px solid var(--line);background:var(--raised);cursor:pointer;max-width:100%}
+.link-chip i{width:8px;height:8px;border-radius:50%;flex:none}
+.link-chip small{color:var(--muted);font-family:var(--f-mono);font-size:11px}
+.link-chip:hover{border-color:var(--axis)}
+.md{max-width:65ch;margin:0 0 14px;overflow-wrap:anywhere}
+.md p{margin:0 0 .6em}
+.md h4,.md h5,.md h6{font-family:var(--f-display);margin:.6em 0 .3em}
+.md ul,.md ol{margin:0 0 .6em;padding-left:1.3em}
+.md code{font-family:var(--f-mono);font-size:.88em;background:var(--accent-soft);padding:0 4px;border-radius:4px}
+.md blockquote{margin:0 0 .6em;padding-left:10px;border-left:3px solid var(--line);color:var(--muted)}
+.md a{color:var(--accent)}
+.md.empty{color:var(--muted);font-style:italic}
+.dm-notes{border:1px dashed var(--secret);background:var(--secret-soft);border-radius:8px;padding:8px 12px;margin:0 0 14px;max-width:65ch}
+.dm-notes .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--secret);display:block;margin-bottom:4px}
+.dm-notes .md{margin:0}
+.detail-actions{display:flex;flex-wrap:wrap;gap:6px}
+.detail a{color:var(--accent);overflow-wrap:anywhere}
+.welcome{color:var(--muted);max-width:56ch}
+.welcome h3{color:var(--ink)}
+kbd{font-family:var(--f-mono);font-size:11.5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--raised);color:var(--ink)}
+.stats{display:flex;flex-wrap:wrap;gap:18px;margin:14px 0}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-family:var(--f-display);font-size:24px;color:var(--ink);line-height:1.1}
+.stats span{font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+
+.overlay{position:fixed;inset:0;background:rgba(10,14,24,.45);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--raised);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);width:min(600px,100%);max-height:calc(100% - 8px);display:flex;flex-direction:column;min-height:0}
+.modal.wide{width:min(840px,100%)}
+.modal-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-family:var(--f-display);font-size:20px;margin:0;flex:1}
+.modal-body{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px;min-height:0}
+.modal-foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding-top:4px}
+.modal-foot .left{margin-right:auto}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field>label,.field>.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.field input[type=text],.field input[type=url],.field input[type=number],.field select,.field textarea,.inp{height:34px;border:1px solid var(--line);border-radius:7px;background:var(--surface);padding:0 10px;width:100%;min-width:0}
+.field textarea{height:auto;min-height:90px;padding:8px 10px;resize:vertical}
+.inp:disabled{opacity:.4}
+textarea.code{font-family:var(--f-mono);font-size:12px;min-height:80px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.row>.field{flex:1 1 140px}
+.datef{display:grid;grid-template-columns:64px minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:6px}
+.datef.noera{grid-template-columns:64px minmax(0,1.6fr) minmax(0,1fr)}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--accent);flex:none}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:5px}
+.icon-grid button{height:36px;border:1px solid var(--line);border-radius:7px;background:var(--surface);cursor:pointer;display:grid;place-items:center}
+.icon-grid button svg{width:17px;height:17px}
+.icon-grid button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.color-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input[type=color]{width:42px;height:34px;padding:2px;border:1px solid var(--line);border-radius:7px;background:var(--surface);cursor:pointer}
+.pick{display:flex;flex-direction:column;gap:6px}
+.pick-box{max-height:150px;overflow:auto;border:1px solid var(--line);border-radius:7px;padding:6px 10px;background:var(--surface);display:flex;flex-direction:column;gap:3px}
+.pick-box .check{font-size:13.5px;min-width:0}
+.pick-box .check span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.err{color:var(--danger);font-size:13.5px;font-weight:500;margin:0}
+.help{font-size:13px;color:var(--muted);margin:0}
+fieldset{border:1px solid var(--line);border-radius:9px;padding:10px 12px 12px;margin:0;min-width:0;display:flex;flex-direction:column;gap:10px}
+legend{font-family:var(--f-display);font-weight:700;font-size:15px;padding:0 6px}
+.tbl-wrap{overflow-x:auto}
+table.ed{border-collapse:collapse;width:100%;font-size:14px}
+table.ed th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:4px 4px}
+table.ed td{padding:3px 4px;vertical-align:middle}
+table.ed td .inp{height:30px}
+table.ed td.num{font-family:var(--f-mono);font-size:12px;color:var(--muted);width:28px}
+table.ed td.act{white-space:nowrap;width:1%}
+.summary,.result{font-family:var(--f-mono);font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+.result b{font-size:14px;color:var(--ink)}
+.img-preview{max-width:100%;border:1px solid var(--line);border-radius:8px;display:block}
+.pop{position:fixed;z-index:40;width:min(340px,calc(100vw - 24px));background:var(--raised);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.pop-head{display:flex;align-items:flex-start;gap:10px}
+.pop-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.pop-t b{font-family:var(--f-display);font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.pop-t span{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.pop-cat{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pop .md{max-height:9.5em;overflow:auto;font-size:14px;margin:0}
+.pop-actions{display:flex;gap:6px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px;z-index:60;box-shadow:var(--shadow)}
+
+@media (max-width:820px){
+  .app{height:auto;grid-template-rows:auto auto 62vh auto}
+  .panes{grid-template-columns:minmax(0,1fr)}
+  .list{max-height:55vh}
+  .hint{display:none}
+  .mv{padding:6px}
+  .mv-cell{min-height:70px;padding:3px}
+  .mv-head{padding:4px 3px;font-size:9.5px;letter-spacing:0}
+  .mv-item{padding:1px 3px;font-size:11px}
+  .mv-item svg{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="top">
+    <h1 class="brand">Timeline Keeper<small>Chronicles for invented calendars</small></h1>
+    <select class="world" id="world-select" aria-label="World"></select>
+    <div class="now-chip" id="now-chip">
+      <button id="now-prev" aria-label="Move current date back one day" title="Back one day"></button>
+      <button class="now-label" id="now-open" title="Set the current date and sessions"><span id="now-kicker">Now</span><b id="now-text">Not set</b></button>
+      <button id="now-next" aria-label="Move current date forward one day" title="Forward one day"></button>
+    </div>
+    <span class="player-banner" id="player-banner" hidden>Player view: secrets hidden</span>
+    <span class="warn" id="storage-warn" hidden>This browser isn't saving. Use Data → Export to keep your work.</span>
+    <div class="spacer"></div>
+    <div class="group">
+      <button class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)" aria-label="Undo"></button>
+      <button class="btn" id="btn-player" aria-pressed="false" title="Hide secret events and DM notes (P)"></button>
+      <button class="btn" id="btn-calendar"></button>
+      <button class="btn" id="btn-cats"></button>
+      <button class="btn" id="btn-data"></button>
+      <button class="btn primary" id="btn-add"></button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg" id="mode-seg" role="group" aria-label="View">
+      <button data-mode="timeline" aria-pressed="true" id="mode-tl"></button>
+      <button data-mode="month" aria-pressed="false" id="mode-mv"></button>
+    </div>
+    <div class="group" id="tl-controls">
+      <button class="icon-btn" id="zoom-out" title="Zoom out (−)" aria-label="Zoom out"></button>
+      <button class="icon-btn" id="zoom-in" title="Zoom in (+)" aria-label="Zoom in"></button>
+      <button class="btn" id="zoom-fit" title="Fit all events (F)"></button>
+      <button class="btn" id="btn-image" title="Save the visible timeline as an image"></button>
+    </div>
+    <div class="group" id="mv-controls" hidden>
+      <button class="icon-btn" id="mv-prevy" title="Previous year" aria-label="Previous year"></button>
+      <button class="icon-btn" id="mv-prev" title="Previous month" aria-label="Previous month"></button>
+      <span class="month-label" id="mv-label"></span>
+      <button class="icon-btn" id="mv-next" title="Next month" aria-label="Next month"></button>
+      <button class="icon-btn" id="mv-nexty" title="Next year" aria-label="Next year"></button>
+    </div>
+    <button class="btn" id="zoom-now" title="Jump to the current date (.)"></button>
+    <button class="btn" id="btn-calc" title="Date calculator"></button>
+    <span class="range" id="range"></span>
+    <div class="spacer"></div>
+    <span class="hint" id="hint"></span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="tl-wrap" id="tl" tabindex="0" aria-label="Timeline. Arrow keys pan, plus and minus zoom.">
+      <svg id="tl-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="tl-empty" id="tl-empty" hidden>No events yet. Click the timeline axis, drag along it for a period, or press “Add event”.</div>
+      <div class="tl-ghost" id="tl-ghost" hidden><span id="tl-ghost-lbl"></span></div>
+      <div class="tl-gutter" id="tl-gutter"></div>
+    </div>
+    <div class="mv" id="mv" hidden></div>
+  </div>
+
+  <div class="panes">
+    <section class="pane" aria-labelledby="list-h">
+      <div class="pane-head">
+        <h2 id="list-h">Events</h2>
+        <span class="count" id="list-count"></span>
+        <div class="search"><span id="search-ico"></span><input type="text" id="search" placeholder="Search titles, descriptions, tags, places" aria-label="Search events"></div>
+        <div class="seg" id="kind-filter" role="group" aria-label="Show">
+          <button data-k="all" aria-pressed="true">All</button>
+          <button data-k="moment" aria-pressed="false">Moments</button>
+          <button data-k="period" aria-pressed="false">Periods</button>
+          <button data-k="life" aria-pressed="false">Characters</button>
+        </div>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="list" id="list"></div>
+    </section>
+    <section class="pane" aria-label="Event details">
+      <div class="detail" id="detail"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2,10);
+const mod = (a,n) => ((a % n) + n) % n;
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STORE_KEY = 'timeline-keeper-v1';
+const MIN_PPD = 2e-6, MAX_PPD = 160;
+
+const ICONS = {
+  dot:'<circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/>',
+  star:'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/>',
+  crown:'<path d="M2 6l4 11h12l4-11-6 5-4-7-4 7z"/><path d="M5 21h14"/>',
+  sword:'<path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  skull:'<path d="M12 2a8 8 0 0 0-8 8c0 3 1.5 5 3 6v4h10v-4c1.5-1 3-3 3-6a8 8 0 0 0-8-8z"/><circle cx="9" cy="11" r="1.6"/><circle cx="15" cy="11" r="1.6"/><path d="M10 20v-2M14 20v-2"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  castle:'<path d="M3 21h18"/><path d="M5 21V9h14v12"/><path d="M5 9V4h3v2h2V4h4v2h2V4h3v5"/><path d="M10 21v-5a2 2 0 0 1 4 0v5"/>',
+  flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  mountain:'<path d="M8 3l4 8 5-5 5 15H2z"/>',
+  tree:'<path d="M12 2L5 12h4l-4 6h14l-4-6h4z"/><path d="M12 18v4"/>',
+  eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  zap:'<path d="M13 2L3 14h9l-1 8 10-12h-9z"/>',
+  heart:'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>',
+  gem:'<path d="M6 3h12l4 6-10 13L2 9z"/><path d="M2 9h20"/><path d="M12 22L8 9l4-6 4 6z"/>',
+  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  person:'<circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>',
+  pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  anchor:'<circle cx="12" cy="5" r="3"/><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/>',
+  hourglass:'<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>'
+};
+const UI = {
+  x:'<path d="M18 6L6 18M6 6l12 12"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  fit:'<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
+  now:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  tag:'<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5"/>',
+  data:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+  chevL:'<path d="M15 18l-6-6 6-6"/>', chevR:'<path d="M9 18l6-6-6-6"/>',
+  dchevL:'<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>', dchevR:'<path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>',
+  up:'<path d="M18 15l-6-6-6 6"/>', down:'<path d="M6 9l6 6 6-6"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  trash:'<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>',
+  eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  timeline:'<path d="M3 12h18"/><circle cx="7" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><path d="M7 10V5M16 14v5"/>',
+  grid:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M9 10v11M15 10v11"/>',
+  calc:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h4"/>',
+  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>'
+};
+const svgI = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const ui = n => svgI(UI[n]);
+const icon = n => svgI(ICONS[n] || ICONS.dot);
+
+function textOn(hex){
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return '#ffffff';
+  const n = parseInt(m[1],16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.62 ? '#14171f' : '#ffffff';
+}
+
+/* ---------- markdown: escape first, then a small safe subset ---------- */
+function inlineMd(s){
+  return s.replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\w)/g,'$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function md(text){
+  const lines=esc(text||'').split(/\r?\n/); let html='', list=null, para=[];
+  const flushP=()=>{ if(para.length){ html+='<p>'+inlineMd(para.join('<br>'))+'</p>'; para=[]; } };
+  const flushL=()=>{ if(list){ html+=`</${list}>`; list=null; } };
+  for(const raw of lines){
+    const l=raw.replace(/\s+$/,''); let m;
+    if(!l.trim()){ flushP(); flushL(); continue; }
+    if((m=/^(#{1,3})\s+(.*)$/.exec(l))){ flushP(); flushL(); const h=m[1].length+3; html+=`<h${h}>${inlineMd(m[2])}</h${h}>`; continue; }
+    if((m=/^\s*[-*]\s+(.*)$/.exec(l))){ flushP(); if(list!=='ul'){ flushL(); html+='<ul>'; list='ul'; } html+='<li>'+inlineMd(m[1])+'</li>'; continue; }
+    if((m=/^\s*\d+[.)]\s+(.*)$/.exec(l))){ flushP(); if(list!=='ol'){ flushL(); html+='<ol>'; list='ol'; } html+='<li>'+inlineMd(m[1])+'</li>'; continue; }
+    if((m=/^&gt;\s?(.*)$/.exec(l))){ flushP(); flushL(); html+='<blockquote>'+inlineMd(m[1])+'</blockquote>'; continue; }
+    flushL(); para.push(l);
+  }
+  flushP(); flushL(); return html;
+}
+
+/* ---------- calendar math ----------
+   Dates are {y, m, d}: y is an absolute year (may be 0 or negative), m a 0-based month index, d 1-based.
+   Absolute day 0 is the first day of year 1. */
+function calBase(cal){ return cal.months.reduce((s,m)=>s+(+m.days||0),0); }
+function ruleHits(r,a,b){ if(b<a || !(r.every>0)) return 0; return Math.floor((b-r.offset)/r.every) - Math.floor((a-1-r.offset)/r.every); }
+function isRuleYear(r,y){ return r.every>0 && mod(y-r.offset, r.every)===0; }
+function validRule(cal,r){ return r.every>0 && r.month>=0 && r.month<cal.months.length; }
+function monthLen(cal,y,m){ let n=+cal.months[m].days||0; for(const r of cal.leap) if(validRule(cal,r) && r.month===m && isRuleYear(r,y)) n+= +r.days; return n; }
+function yearLen(cal,y){ let n=calBase(cal); for(const r of cal.leap) if(validRule(cal,r) && isRuleYear(r,y)) n+= +r.days; return n; }
+function avgYear(cal){ let n=calBase(cal); for(const r of cal.leap) if(validRule(cal,r)) n+= (+r.days)/r.every; return n>0?n:1; }
+function daysBeforeYear(cal,y){
+  const base=calBase(cal); let n;
+  if(y>=1){ n=(y-1)*base; for(const r of cal.leap) if(validRule(cal,r)) n+=ruleHits(r,1,y-1)*r.days; }
+  else { n=-(1-y)*base; for(const r of cal.leap) if(validRule(cal,r)) n-=ruleHits(r,y,0)*r.days; }
+  return n;
+}
+function toDay(cal,dt){
+  const m=clamp(dt.m|0,0,cal.months.length-1);
+  let n=daysBeforeYear(cal,dt.y);
+  for(let i=0;i<m;i++) n+=monthLen(cal,dt.y,i);
+  const ml=monthLen(cal,dt.y,m);
+  if(ml<=0) return n;
+  return n + clamp(dt.d|0,1,ml) - 1;
+}
+function fromDay(cal,n){
+  n=Math.floor(n);
+  let y=Math.floor(n/avgYear(cal))+1, guard=0;
+  while(daysBeforeYear(cal,y)>n && guard++<1e5) y--;
+  while(daysBeforeYear(cal,y+1)<=n && guard++<1e5) y++;
+  let r=n-daysBeforeYear(cal,y);
+  for(let m=0;m<cal.months.length;m++){ const ml=monthLen(cal,y,m); if(r<ml) return {y,m,d:r+1}; r-=ml; }
+  return {y,m:cal.months.length-1,d:1};
+}
+const norm = (cal,dt) => fromDay(cal,toDay(cal,dt));
+function unitStart(cal,dt,p){ if(p==='year') return daysBeforeYear(cal,dt.y); if(p==='month') return toDay(cal,{y:dt.y,m:dt.m,d:1}); return toDay(cal,dt); }
+function unitEnd(cal,dt,p){
+  if(p==='year') return daysBeforeYear(cal,dt.y+1);
+  if(p==='month') return toDay(cal,{y:dt.y,m:dt.m,d:1})+Math.max(1,monthLen(cal,dt.y,dt.m));
+  return toDay(cal,dt)+1;
+}
+function addMonths(cal,dt,k){
+  const M=cal.months.length, idx=dt.y*M+dt.m+k, y=Math.floor(idx/M), m=mod(idx,M);
+  return {y,m,d:Math.min(dt.d,Math.max(1,monthLen(cal,y,m)))};
+}
+function addYears(cal,dt,k){ const y=dt.y+k; return {y,m:dt.m,d:Math.min(dt.d,Math.max(1,monthLen(cal,y,dt.m)))}; }
+function ageAt(birth,bp,d){
+  let a=d.y-birth.y;
+  if(bp==='day'){ if(d.m<birth.m || (d.m===birth.m && d.d<birth.d)) a--; }
+  else if(bp==='month'){ if(d.m<birth.m) a--; }
+  return a;
+}
+function sortedEras(cal){ return [...(cal.eras||[])].filter(e=>e.name||e.abbr).sort((a,b)=>a.start-b.start); }
+function hasPre(cal){ return !!(cal.preEra && (cal.preEra.name||cal.preEra.abbr)); }
+function eraOf(cal,y){
+  const eras=sortedEras(cal);
+  for(let i=eras.length-1;i>=0;i--) if(y>=eras[i].start) return {era:eras[i], idx:i, ey:y-eras[i].start+1};
+  if(eras.length && hasPre(cal)) return {era:cal.preEra, idx:'pre', ey:eras[0].start-y};
+  if(eras.length) return {era:eras[0], idx:0, ey:y-eras[0].start+1};
+  return {era:null, idx:-1, ey:y};
+}
+function fmtYear(cal,y){ const e=eraOf(cal,y); return e.era ? `${e.ey} ${e.era.abbr||e.era.name}` : String(e.ey); }
+function weekdayOf(cal,dt){ const w=cal.weekdays||[]; if(!w.length) return ''; return w[mod(toDay(cal,dt)+(+cal.epochWeekday||0), w.length)]; }
+function fmtDate(cal,dt,withWeekday){
+  const m=cal.months[clamp(dt.m,0,cal.months.length-1)]; if(!m) return '';
+  const single = m.ic && monthLen(cal,dt.y,dt.m)<=1;
+  const core = single ? `${m.name} ${fmtYear(cal,dt.y)}` : `${dt.d} ${m.name} ${fmtYear(cal,dt.y)}`;
+  if(withWeekday){ const wd=weekdayOf(cal,dt); if(wd && !m.ic) return `${wd}, ${core}`; }
+  return core;
+}
+function fmtP(cal,dt,p,approx,wd){
+  const s = p==='year' ? fmtYear(cal,dt.y) : p==='month' ? `${cal.months[clamp(dt.m,0,cal.months.length-1)].name} ${fmtYear(cal,dt.y)}` : fmtDate(cal,dt,wd);
+  return (approx?'c. ':'')+s;
+}
+function fmtSpan(cal,days){
+  days=Math.abs(Math.round(days)); const avg=avgYear(cal);
+  const y=Math.floor(days/avg), d=Math.round(days-y*avg);
+  const parts=[]; if(y) parts.push(`${y.toLocaleString()} year${y===1?'':'s'}`); if(d||!y) parts.push(`${d} day${d===1?'':'s'}`);
+  return parts.join(', ');
+}
+
+/* ---------- calendar presets ---------- */
+function makeCalendar(kind){
+  if(kind==='scarred') return {
+    preset:'scarred',
+    months:['Iceheart','Frostbloom','Stormwatch','Cloudbreak','Winddance','Firethorn','Sunspark','Starfall','Emberfall','Leafwilt','Moonwhisper','Snowshimmer'].map(name=>({name,days:28,ic:false})),
+    weekdays:['Moonday','Tidesday','Glimmerday','Dreamday','Soothingday','Dazzleday','Sunburstday'], epochWeekday:0,
+    leap:[], eras:[], preEra:{name:'',abbr:''}
+  };
+  if(kind==='gregorian') return {
+    preset:'gregorian',
+    months:[['January',31],['February',28],['March',31],['April',30],['May',31],['June',30],['July',31],['August',31],['September',30],['October',31],['November',30],['December',31]].map(([name,days])=>({name,days,ic:false})),
+    weekdays:['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], epochWeekday:0,
+    leap:[{every:4,offset:0,month:1,days:1},{every:100,offset:0,month:1,days:-1},{every:400,offset:0,month:1,days:1}],
+    eras:[{name:'Anno Domini',abbr:'AD',start:1}], preEra:{name:'Before Christ',abbr:'BC'}
+  };
+  if(kind==='harptos') return {
+    preset:'harptos',
+    months:[['Hammer',30],['Midwinter',1,1],['Alturiak',30],['Ches',30],['Tarsakh',30],['Greengrass',1,1],['Mirtul',30],['Kythorn',30],['Flamerule',30],['Midsummer',1,1],['Shieldmeet',0,1],['Eleasis',30],['Eleint',30],['Highharvestide',1,1],['Marpenoth',30],['Uktar',30],['Feast of the Moon',1,1],['Nightal',30]].map(([name,days,ic])=>({name,days,ic:!!ic})),
+    weekdays:[], epochWeekday:0, leap:[{every:4,offset:0,month:10,days:1}],
+    eras:[{name:'Dalereckoning',abbr:'DR',start:1}], preEra:{name:'',abbr:''}
+  };
+  if(kind==='blank') return {
+    preset:'blank', months:Array.from({length:12},(_,i)=>({name:`Month ${i+1}`,days:30,ic:false})),
+    weekdays:[], epochWeekday:0, leap:[], eras:[], preEra:{name:'',abbr:''}
+  };
+  return {
+    preset:'example',
+    months:[['Frostmere',36],['Thawing',36],['Seedtide',36],['Bloomrise',36],['Highsun',36],['Veilturn',5,1],['Emberfall',36],['Harvestwane',36],['Duskmoor',36],['Veilnight',36],['Deepwinter',36]].map(([name,days,ic])=>({name,days,ic:!!ic})),
+    weekdays:['Ardas','Belen','Corim','Dovar','Eskel','Faro'], epochWeekday:0, leap:[{every:4,offset:0,month:5,days:1}],
+    eras:[{name:'After Founding',abbr:'AF',start:1}], preEra:{name:'Before Founding',abbr:'BF'}
+  };
+}
+const PRESETS=[['scarred','Scarred Lands (12 × 28 days, 7-day week)'],['example','Example fantasy calendar (11 months, 6-day week)'],['harptos','Calendar of Harptos (Forgotten Realms)'],['gregorian','Gregorian (real-world)'],['blank','Blank: 12 × 30 days']];
+
+/* ---------- state ---------- */
+function dateFromFrac(cal,yf){ const y=Math.floor(yf); const doy=Math.round((yf-y)*yearLen(cal,y)); return fromDay(cal,daysBeforeYear(cal,y)+clamp(doy,0,yearLen(cal,y)-1)); }
+function blankEvent(extra){ return Object.assign({id:uid(),title:'',kind:'moment',start:null,end:null,prec:'day',approx:false,cat:'',icon:'star',color:'',line:false,tags:[],link:'',desc:'',dmNotes:'',secret:false,location:'',session:'',who:[],ledTo:[],repeat:null,phases:[]},extra); }
+function sampleWorld(){
+  const cal=makeCalendar('scarred');
+  const cats=[
+    {id:'c-ash',name:'Ashen Empire',color:'#3b2bb0'},{id:'c-iris',name:'Iris',color:'#1b8fd1'},
+    {id:'c-cat',name:'Catastrophes',color:'#b0142f'},{id:'c-war',name:'Wars & Sieges',color:'#2f7fc4'},
+    {id:'c-turn',name:'Turning Points',color:'#2f9a2a'},{id:'c-wx',name:'Weather',color:'#b8891b'}
+  ];
+  const iris=blankEvent({title:'Iris',kind:'life',start:{y:1190,m:0,d:1},prec:'year',approx:true,cat:'c-iris',icon:'person',desc:'Character entry. Set her real birth year, or untick “approximate” once you know it.'});
+  const M=(title,yf,cat,ic,line,extra)=>blankEvent(Object.assign({title,start:dateFromFrac(cal,yf),cat,icon:ic,line:!!line},extra||{}));
+  const P=(title,a,b,cat,ic,band,extra)=>blankEvent(Object.assign({title,kind:'period',start:dateFromFrac(cal,a),end:dateFromFrac(cal,b),cat,icon:ic,line:!!band},extra||{}));
+  const events=[
+    iris,
+    M('Fall From Grace',1219.35,'c-ash','crown',true,{tags:['ashen']}),
+    M('Trapped in Frozen Wastes',1219.55,'c-iris','mountain',false,{tags:['iris'],who:[iris.id]}),
+    M('Iris awakes as a Reborn',1219.75,'c-iris','eye',false,{tags:['iris','reborn'],who:[iris.id]}),
+    M('Volcanus Returns',1221.3,'c-cat','flame',true,{tags:['volcanus']}),
+    M("Lord's Empire Crushed",1222.8,'c-cat','crown',true),
+    M('Sphera Destroyed',1223.8,'c-cat','skull',true,{tags:['sphera'],location:'Sphera'}),
+    M('New Grandia destroyed',1226.2,'c-cat','skull',true,{tags:['new grandia'],location:'New Grandia'}),
+    M('The Ashen Withdraw',1231.2,'c-turn','flag',true,{tags:['ashen']}),
+    M('Coordinated Attack vs Ashen',1233.9,'c-ash','sword',true,{tags:['ashen']}),
+    M('City Grand Ashen Founded',1240.0,'c-ash','castle',true,{tags:['ashen'],location:'Grand Ashen'}),
+    M('Iris reaches the greater Wyldermoore Area',1248.5,'c-iris','pin',false,{tags:['iris','wyldermoore'],location:'Wyldermoore',who:[iris.id]}),
+    M('Ashen failed attack on Wyldermoore',1248.9,'c-cat','shield',false,{tags:['ashen','wyldermoore'],location:'Wyldermoore'}),
+    P('Ashen Civil War',1219.0,1221.3,'c-war','sword',true,{tags:['ashen']}),
+    P('Dark Citadel Under Siege',1221.7,1223.7,'c-war','castle',true,{location:'Dark Citadel'}),
+    P('Sphera Under Siege',1222.9,1223.8,'c-war','shield',false,{tags:['sphera'],location:'Sphera'}),
+    P('New Grandia Under Siege',1225.0,1226.2,'c-war','shield',true,{tags:['new grandia'],location:'New Grandia'}),
+    P('Thundermount Under Siege',1226.8,1231.2,'c-war','mountain',true,{location:'Thundermount'}),
+    P('The Weather Wars',1242.0,1247.4,'c-wx','zap',true)
+  ];
+  return {id:uid(),name:'Ashen Chronicle (Scarred Lands)',calendar:cal,categories:cats,events,now:dateFromFrac(cal,1249.2),session:1,sessionLog:[],view:null};
+}
+function newWorld(name,preset){ return {id:uid(),name:name||'New world',calendar:makeCalendar(preset),categories:[{id:uid(),name:'General',color:'#3647a8'}],events:[],now:null,session:1,sessionLog:[],view:null}; }
+/* One-time move of the original sample world onto the Scarred Lands calendar, keeping each date at the same point in its year. */
+function migrateAshen(w){
+  if(!w || w.name!=='Ashen Chronicle (example)' || !w.calendar || w.calendar.preset!=='example') return;
+  const oldCal=w.calendar, cal=makeCalendar('scarred');
+  const conv=dt=>{ if(!dt) return dt; const n=toDay(oldCal,dt); const frac=(n-daysBeforeYear(oldCal,dt.y))/yearLen(oldCal,dt.y); return dateFromFrac(cal,dt.y+frac); };
+  w.events.forEach(e=>{ e.start=conv(e.start); if(e.end) e.end=conv(e.end); });
+  w.now=conv(w.now); w.calendar=cal; w.name='Ashen Chronicle (Scarred Lands)';
+}
+/* Fill fields added in later versions so older saves keep working. */
+function upgradeWorld(w){
+  migrateAshen(w);
+  w.categories=Array.isArray(w.categories)?w.categories:[]; w.events=Array.isArray(w.events)?w.events:[];
+  if(!(w.session>=1)) w.session=1;
+  if(!Array.isArray(w.sessionLog)) w.sessionLog=[];
+  if(!Array.isArray(w.hiddenChars)) w.hiddenChars=[];
+  if(w.charsOpen===undefined) w.charsOpen=true;
+  const c=w.calendar; c.weekdays=c.weekdays||[]; c.leap=c.leap||[]; c.eras=c.eras||[]; c.preEra=c.preEra||{name:'',abbr:''};
+  w.events=w.events.filter(e=>e&&e.start).map(e=>{ const out=Object.assign(blankEvent({}),e);
+    out.id=out.id||uid(); out.title=String(out.title||'Untitled');
+    if(!['moment','period','life'].includes(out.kind)) out.kind='moment';
+    if(!['day','month','year'].includes(out.prec)) out.prec='day';
+    if(!ICONS[out.icon]) out.icon='dot';
+    ['tags','who','ledTo','phases'].forEach(k=>{ if(!Array.isArray(out[k])) out[k]=[]; });
+    out.phases=out.phases.filter(ph=>ph&&ph.start).map(ph=>({id:ph.id||uid(),label:String(ph.label||''),start:ph.start,color:ph.color||'#5b6bd6'}));
+    ['link','desc','dmNotes','location','color','cat'].forEach(k=>{ out[k]=out[k]==null?'':String(out[k]); });
+    out.session = out.session==null ? '' : String(out.session);
+    if(out.repeat && !(out.repeat.every>0 && (out.repeat.unit==='day'||out.repeat.unit==='year'))) out.repeat=null;
+    return out; });
+  return w;
+}
+
+/* The chronicle as exported on 7 Oct 2026. Fresh browsers start from it, and each browser replaces its copy of this world once (SEED_REV). */
+const SEED_REV='ashen-2026-10-07';
+const SEED_DATA={"version":3,"activeId":"kainlbwp","worlds":[{"id":"kainlbwp","name":"Ashen Chronicle (Scarred Lands)","calendar":{"preset":"scarred","months":[{"name":"Iceheart","days":28,"ic":false},{"name":"Frostbloom","days":28,"ic":false},{"name":"Stormwatch","days":28,"ic":false},{"name":"Cloudbreak","days":28,"ic":false},{"name":"Winddance","days":28,"ic":false},{"name":"Firethorn","days":28,"ic":false},{"name":"Sunspark","days":28,"ic":false},{"name":"Starfall","days":28,"ic":false},{"name":"Emberfall","days":28,"ic":false},{"name":"Leafwilt","days":28,"ic":false},{"name":"Moonwhisper","days":28,"ic":false},{"name":"Snowshimmer","days":28,"ic":false}],"weekdays":["Moonday","Tidesday","Glimmerday","Dreamday","Soothingday","Dazzleday","Sunburstday"],"epochWeekday":0,"leap":[],"eras":[],"preEra":{"name":"","abbr":""}},"categories":[{"id":"c-ash","name":"Ashen Empire","color":"#3b2bb0"},{"id":"c-iris","name":"Iris","color":"#1b8fd1"},{"id":"c-cat","name":"Catastrophes","color":"#b0142f"},{"id":"c-war","name":"Wars & Sieges","color":"#2f7fc4"},{"id":"c-turn","name":"Turning Points","color":"#2f9a2a"},{"id":"c-wx","name":"Weather","color":"#b8891b"}],"events":[{"id":"k0ayxlxn","title":"Iris","kind":"life","start":{"y":1190,"m":0,"d":1},"end":null,"prec":"year","approx":true,"cat":"c-iris","icon":"person","color":"","line":false,"tags":[],"link":"","desc":"Character entry. Set her real birth year, or untick “approximate” once you know it.","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"vruyeo5e","title":"Fall From Grace","kind":"moment","start":{"y":1219,"m":0,"d":3},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"crown","color":"","line":true,"tags":["ashen"],"link":"","desc":"Volcanus trapped and Vulrathar dies","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"lw49t662","title":"Trapped in Frozen Wastes","kind":"moment","start":{"y":1219,"m":6,"d":18},"end":null,"prec":"day","approx":false,"cat":"c-iris","icon":"mountain","color":"","line":false,"tags":["iris"],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"","who":["k0ayxlxn"],"ledTo":[],"repeat":null},{"id":"psnixh1i","title":"Iris awakes as a Reborn","kind":"moment","start":{"y":1219,"m":9,"d":1},"end":null,"prec":"day","approx":false,"cat":"c-iris","icon":"eye","color":"","line":false,"tags":["iris","reborn"],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"","who":["k0ayxlxn"],"ledTo":[],"repeat":null},{"id":"4o593q0m","title":"Volcanus Returns","kind":"moment","start":{"y":1221,"m":3,"d":18},"end":null,"prec":"day","approx":false,"cat":"c-cat","icon":"flame","color":"","line":true,"tags":["volcanus"],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"yjbekwpk","title":"Lord's Empire Crushed","kind":"moment","start":{"y":1222,"m":9,"d":18},"end":null,"prec":"day","approx":false,"cat":"c-cat","icon":"crown","color":"","line":true,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"vb87baid","title":"Sphera Destroyed","kind":"moment","start":{"y":1223,"m":9,"d":18},"end":null,"prec":"day","approx":false,"cat":"c-cat","icon":"skull","color":"","line":true,"tags":["sphera"],"link":"","desc":"","dmNotes":"","secret":false,"location":"Sphera","session":"","who":[],"ledTo":[],"repeat":null},{"id":"z6cd8gbl","title":"New Grandia destroyed","kind":"moment","start":{"y":1226,"m":2,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-cat","icon":"skull","color":"","line":true,"tags":["new grandia"],"link":"","desc":"","dmNotes":"","secret":false,"location":"New Grandia","session":"","who":[],"ledTo":[],"repeat":null},{"id":"1nagpqym","title":"The Ashen Withdraw","kind":"moment","start":{"y":1231,"m":2,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-turn","icon":"flag","color":"","line":true,"tags":["ashen"],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"6b1j6wo9","title":"Coordinated Attack vs Ashen","kind":"moment","start":{"y":1233,"m":10,"d":23},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"sword","color":"","line":true,"tags":["ashen"],"link":"","desc":"All cities except Thundermount, bittered from no assistance before and conserving resources against a new siege. The attack failed with great losses in both sides.","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"9z05jx7r","title":"City Grand Ashen Founded","kind":"moment","start":{"y":1240,"m":0,"d":1},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"castle","color":"","line":true,"tags":["ashen"],"link":"","desc":"In the place of New Grandia a new city was founded to act as an Ashen military front.","dmNotes":"","secret":false,"location":"Grand Ashen","session":"","who":[],"ledTo":[],"repeat":null},{"id":"n1qfexu2","title":"Iris reaches the greater Wyldermoore Area","kind":"moment","start":{"y":1248,"m":6,"d":1},"end":null,"prec":"day","approx":false,"cat":"c-iris","icon":"pin","color":"","line":false,"tags":["iris","wyldermoore"],"link":"","desc":"","dmNotes":"","secret":false,"location":"Wyldermoore","session":"","who":["k0ayxlxn"],"ledTo":[],"repeat":null},{"id":"9tsvz9ri","title":"Ashen failed attack on Wyldermoore","kind":"moment","start":{"y":1248,"m":10,"d":23},"end":null,"prec":"day","approx":false,"cat":"c-cat","icon":"shield","color":"","line":false,"tags":["ashen","wyldermoore"],"link":"","desc":"","dmNotes":"","secret":false,"location":"Wyldermoore","session":"","who":[],"ledTo":[],"repeat":null},{"id":"q2p269pt","title":"Ashen Civil War","kind":"period","start":{"y":1219,"m":0,"d":1},"end":{"y":1221,"m":3,"d":18},"prec":"day","approx":false,"cat":"c-war","icon":"sword","color":"","line":true,"tags":["ashen"],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"s9t23jx5","title":"Dark Citadel Under Siege","kind":"period","start":{"y":1221,"m":8,"d":12},"end":{"y":1222,"m":9,"d":18},"prec":"day","approx":false,"cat":"c-war","icon":"castle","color":"","line":true,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"Dark Citadel","session":"","who":[],"ledTo":[],"repeat":null},{"id":"c5mmrzyx","title":"Sphera Under Siege","kind":"period","start":{"y":1223,"m":8,"d":23},"end":{"y":1223,"m":9,"d":16},"prec":"day","approx":false,"cat":"c-war","icon":"shield","color":"","line":false,"tags":["sphera"],"link":"","desc":"","dmNotes":"","secret":false,"location":"Sphera","session":"","who":[],"ledTo":[],"repeat":null},{"id":"adrsts9e","title":"New Grandia Under Siege","kind":"period","start":{"y":1225,"m":0,"d":1},"end":{"y":1226,"m":2,"d":12},"prec":"day","approx":false,"cat":"c-war","icon":"shield","color":"","line":true,"tags":["new grandia"],"link":"","desc":"","dmNotes":"","secret":false,"location":"New Grandia","session":"","who":[],"ledTo":[],"repeat":null},{"id":"e5w64bwg","title":"Thundermount Under Siege","kind":"period","start":{"y":1226,"m":9,"d":18},"end":{"y":1231,"m":2,"d":12},"prec":"day","approx":false,"cat":"c-war","icon":"mountain","color":"","line":true,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"Thundermount","session":"","who":[],"ledTo":[],"repeat":null},{"id":"zc4kjlv3","title":"The Weather Wars","kind":"period","start":{"y":1242,"m":0,"d":17},"end":{"y":1247,"m":4,"d":23},"prec":"day","approx":false,"cat":"c-wx","icon":"zap","color":"","line":true,"tags":[],"link":"","desc":"Horrible weather phenomena raging all over, isolating cities and forcing the Ashen to withdraw.","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null},{"id":"ohfxi781","title":"Ashen Attacks Wyldermoore and Memento","kind":"period","start":{"y":1248,"m":8,"d":25},"end":{"y":1250,"m":2,"d":12},"prec":"day","approx":false,"cat":"c-ash","icon":"sword","color":"","line":true,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"h151zrc3","title":"Ashen withdraw entirely","kind":"moment","start":{"y":1250,"m":2,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"star","color":"","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"d50rmhja","title":"Ashen tries to reach The Scar","kind":"period","start":{"y":1250,"m":3,"d":7},"end":{"y":1250,"m":8,"d":18},"prec":"day","approx":false,"cat":"c-ash","icon":"skull","color":"#b12b2b","line":true,"tags":[],"link":"","desc":"If Volcanus reaches the Scar, the end of the entire plane is assured.","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"t2a73eh7","title":"Godfall - The Twilight of the Gods","kind":"moment","start":{"y":1250,"m":8,"d":18},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"moon","color":"#ff1100","line":false,"tags":[],"link":"","desc":"All nations work together and attack from all sides. \nThe Lord assists in this battle with all his children.\n\nJason and Shade fight as well. They lead the battle against the ever-growing power of Volcanus.  \n\nVolcanus dies and at that moment the Tempest draws out his strength and claims it as his own and becomes almighty. The Lord betrays him, he has setup a very powerful trap with the magic ritual that broke his world and drains him from all his power and kills him.\n\nAs his final act, Tempest releases the Drift from its prison and casts a last spell with his waning power.","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"tuzejq5y","title":"Lylandra dies","kind":"moment","start":{"y":1249,"m":9,"d":9},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"skull","color":"#fe0606","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"ffvsv8v5","title":"Roselya dies","kind":"moment","start":{"y":1249,"m":3,"d":11},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"skull","color":"#fe0606","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"bgge53cv","title":"Erinya dies","kind":"moment","start":{"y":1249,"m":6,"d":21},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"skull","color":"#fe0606","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"drhtmlr6","title":"Iris hunts Sloth","kind":"moment","start":{"y":1250,"m":8,"d":21},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"eye","color":"#bade35","line":false,"tags":[],"link":"","desc":"She finds his mansion and infiltrates it. Sloth is weakened from the battle but she fails to kill him, runs away carrying Kyle who's almost lost in complete madness.","dmNotes":"","secret":false,"location":"","session":"1","who":["k0ayxlxn"],"ledTo":[],"repeat":null},{"id":"oy55twqp","title":"Towards the Drift","kind":"period","start":{"y":1254,"m":7,"d":17},"end":{"y":1257,"m":0,"d":2},"prec":"day","approx":false,"cat":"c-iris","icon":"star","color":"#0e26dd","line":true,"tags":[],"link":"","desc":"The Drift recovers and gathers powers to face a much more powerful and ready Lord","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"on5e3nap","title":"Quest for a healer","kind":"period","start":{"y":1250,"m":10,"d":6},"end":{"y":1254,"m":7,"d":17},"prec":"day","approx":false,"cat":"c-iris","icon":"heart","color":"#2bb13a","line":true,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"ehb1w6tz","title":"Iris learns the Drift is back","kind":"moment","start":{"y":1254,"m":7,"d":17},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"heart","color":"#d6fe10","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"f1oyh2fx","title":"Lord recovers","kind":"moment","start":{"y":1253,"m":5,"d":17},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"skull","color":"#2d2d2f","line":false,"tags":[],"link":"","desc":"He's trying to tame his newfound powers and control them. Grows stronger by the day.","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"pqmws0mx","title":"Iris and Kyle return to the Drift","kind":"moment","start":{"y":1257,"m":0,"d":2},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"heart","color":"#d6fe10","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"zv4xw2qa","title":"Captain issues new orders","kind":"moment","start":{"y":1257,"m":6,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"crown","color":"#fffa70","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"lmko358c","title":"Arcane magic is weakening","kind":"moment","start":{"y":1266,"m":2,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"moon","color":"#ff66eb","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"w43lxnw3","title":"Divine magic is weakening","kind":"moment","start":{"y":1269,"m":2,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"moon","color":"#5bcfec","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"dab64yy8","title":"The Last Frozen Edge Expedition","kind":"moment","start":{"y":1274,"m":2,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"star","color":"#b6076d","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"v4hvvq3u","title":"Great Quakes","kind":"period","start":{"y":1250,"m":8,"d":18},"end":{"y":1250,"m":9,"d":28},"prec":"day","approx":false,"cat":"c-cat","icon":"star","color":"#735459","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"fs46s4l7","title":"Quest for Magic","kind":"period","start":{"y":1268,"m":2,"d":25},"end":{"y":1275,"m":2,"d":12},"prec":"day","approx":false,"cat":"","icon":"star","color":"#e2cee3","line":true,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"cbh3hh00","title":"Frozen Edge Expedition (Sherina)","kind":"moment","start":{"y":1265,"m":2,"d":12},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"mountain","color":"","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"ej2yr2am","title":"Frozen Edge Expedition (Frost Queen)","kind":"moment","start":{"y":1269,"m":7,"d":14},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"mountain","color":"","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"dror6uhn","title":"Attack on Sloth","kind":"moment","start":{"y":1270,"m":8,"d":18},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"mountain","color":"","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null},{"id":"902f8isi","title":"Island of the Vampire","kind":"moment","start":{"y":1272,"m":1,"d":9},"end":null,"prec":"day","approx":false,"cat":"c-ash","icon":"skull","color":"","line":false,"tags":[],"link":"","desc":"","dmNotes":"","secret":false,"location":"","session":"1","who":[],"ledTo":[],"repeat":null}],"now":{"y":1249,"m":2,"d":12},"session":1,"sessionLog":[],"view":null}],"playerView":false,"mode":"timeline"};
+/* Additions made after the seed export. Each is applied once per browser and only adds what is missing, so later edits are kept. */
+const PATCHES=[{"rev":"syreen-1","world":"kainlbwp","categories":[{"id":"c-syreen","name":"Syreen Haven","color":"#c2611f"}],"events":[{"title":"Syreen Haven","kind":"life","start":{"y":1170,"m":0,"d":1},"end":null,"prec":"year","approx":true,"cat":"c-syreen","icon":"shield","color":"","line":false,"tags":["syreen","eladrin","paladin"],"link":"","desc":"Ο θρύλος λέει ότι στο φθινοπωρινό βασίλειο του **Feywild** τα φύλλα δεν πέφτουν ποτέ ολοκληρωτικά. Απλώς αλλάζουν χρώμα, ξανά και ξανά, σαν να μη μπορούν να αποφασίσουν να αποχαιρετήσουν. Εκεί γεννήθηκε η **Syreen Haven**, η μικρότερη από επτά παιδιά μιας Autumn Eladrin οικογένειας. Είχε πέντε μεγαλύτερους αδερφούς, θορυβώδεις και ανταγωνιστικούς, και μία μεγαλύτερη αδερφή, που έγινε το πιο σταθερό της στήριγμα. Ο πατέρας τους έφυγε όταν η Syreen ήταν ακόμα μωρό και δεν τον ξαναείδε ποτέ. Τα επτά παιδιά τα μεγάλωσε μόνη της η μητέρα της, μια γυναίκα αυστηρή αλλά και η πρώτη που την κρατούσε κάθε φορά που έκλαιγε.\n\nΤο χάρισμά της φάνηκε νωρίς. Όταν κάποιος γύρω της πονούσε, ένα ζεστό, κεχριμπαρένιο φως μαζευόταν στις παλάμες της. Η μητέρα της δεν το άφησε να γίνει παιχνίδι ούτε αιτία για έπαρση, αλλά το έκανε πειθαρχία: προσευχή, άσκηση και ευθύνη. Όταν χρόνια αργότερα έδωσε το **Oath of Devotion**, δεν ένιωσε ότι κάτι καινούργιο της δόθηκε. Ένιωσε ότι έβαζε επιτέλους λόγια σε μια υπόσχεση που κρατούσε από παιδί: να προστατεύει όσους αγαπά.\n\nΗ οικογένειά της την πλήγωσε πολλές φορές, αλλά δεν έπαψε ποτέ να τους αγαπά. Είναι αισιόδοξη και βαθιά συμπονετική, αλλά όσα έζησε έχουν αφήσει σημάδια. Όπως κάθε Eladrin του φθινοπώρου, η διάθεσή της αλλάζει σαν τα φύλλα: από ζεστή τρυφερότητα σε μια ήσυχη, βαριά μελαγχολία. Εμπιστεύεται εύκολα, ίσως πολύ εύκολα, και συχνά βάζει τους άλλους πάνω από τον εαυτό της.\n\nΜια πύλη από το Feywild την οδήγησε στην **ιπτάμενη πόλη του Drift**, ένα ερειπωμένο αλλά ζωντανό νησί πάνω από τα σύννεφα, με το **Crystal Forge** να βουίζει στην καρδιά του. Για ένα διάστημα πηγαινοερχόταν. Βοηθούσε όπου μπορούσε, γιάτρευε όποιον τη χρειαζόταν και γύριζε σπίτι με ιστορίες για την αδερφή της.\n\nΣτις αρχές του **1269** η πύλη στην πόλη του Drift απενεργοποιήθηκε, και η Syreen έμεινε εγκλωβισμένη. Δεν ξέρει αν στο σπίτι κάποιος γνωρίζει τι της συνέβη, ούτε αν η αδερφή της την περιμένει ή την έχει ήδη πενθήσει. Ξέρει όμως τι υποσχέθηκε. Κι αν δεν μπορεί να προστατεύσει όσους άφησε πίσω, θα προστατεύσει όσους βρίσκονται τώρα δίπλα της, μέχρι να βρει τον δρόμο για το σπίτι.","dmNotes":"","secret":false,"location":"","session":"","who":[],"ledTo":[],"repeat":null,"id":"syreen01"},{"title":"Drift portal goes dark, Syreen stranded","kind":"moment","start":{"y":1269,"m":0,"d":1},"end":null,"prec":"month","approx":true,"cat":"c-syreen","icon":"gem","color":"","line":false,"tags":["syreen","drift","portal"],"link":"","desc":"Η πύλη προς το Feywild, στην ιπτάμενη πόλη του **Drift**, απενεργοποιείται. Η **Syreen Haven** μένει εγκλωβισμένη στον κόσμο, χωρίς τρόπο να γυρίσει σπίτι.","dmNotes":"","secret":false,"location":"The Drift","session":"","who":["syreen01"],"ledTo":[],"repeat":null,"id":"syreen02"}]},{"rev":"syreen-2","world":"kainlbwp","updates":[{"id":"syreen01","ifEmpty":"phases","set":{"phases":[{"id":"ph-sy1","label":"Feywild","start":{"y":1170,"m":0,"d":1},"color":"#c2611f"},{"id":"ph-sy2","label":"Stranded in the Drift","start":{"y":1269,"m":0,"d":1},"color":"#5b6bd6"}]}}]}];
+function applyPatches(st){
+  st.patches=Array.isArray(st.patches)?st.patches:[];
+  for(const pt of PATCHES){
+    if(st.patches.includes(pt.rev)) continue;
+    const w=st.worlds.find(x=>x.id===pt.world);
+    if(w){
+      for(const c of (pt.categories||[])) if(!w.categories.some(x=>x.id===c.id)) w.categories.push(JSON.parse(JSON.stringify(c)));
+      for(const e of (pt.events||[])) if(!w.events.some(x=>x.id===e.id)) w.events.push(JSON.parse(JSON.stringify(e)));
+      for(const u of (pt.updates||[])){ const ev=w.events.find(x=>x.id===u.id); if(ev && (!u.ifEmpty || !(ev[u.ifEmpty]||[]).length)) Object.assign(ev,JSON.parse(JSON.stringify(u.set))); }
+      upgradeWorld(w);
+    }
+    st.patches.push(pt.rev);
+  }
+  return st;
+}
+function seedWorld(){ return upgradeWorld(JSON.parse(JSON.stringify(SEED_DATA.worlds[0]))); }
+let S, storageOK=true;
+function load(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw){ const p=JSON.parse(raw); if(p && Array.isArray(p.worlds) && p.worlds.length){
+      p.worlds.forEach(upgradeWorld);
+      if(p.seedRev!==SEED_REV){
+        const fresh=seedWorld();
+        const i=p.worlds.findIndex(w=>w.id===fresh.id || w.name===fresh.name);
+        if(i>=0) p.worlds[i]=fresh; else p.worlds.unshift(fresh);
+        p.activeId=fresh.id; p.seedRev=SEED_REV;
+      }
+      return applyPatches(p); } }
+  }catch(e){ storageOK=false; }
+  const w=seedWorld(); return applyPatches({version:3,seedRev:SEED_REV,activeId:w.id,worlds:[w],playerView:false,mode:'timeline'});
+}
+let saveTimer=null;
+function saveSoon(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveNow,250); }
+function saveNow(){
+  try{ localStorage.setItem(STORE_KEY,JSON.stringify(S)); storageOK=true; }catch(e){ storageOK=false; }
+  $('#storage-warn').hidden=storageOK;
+}
+const W = () => S.worlds.find(w=>w.id===S.activeId) || S.worlds[0];
+const ui$ = { selected:null, query:'', kind:'all', loc:'', ses:'', month:null };
+
+/* undo */
+const undoStack=[];
+function snapshot(){ undoStack.push(JSON.stringify(S)); if(undoStack.length>60) undoStack.shift(); $('#btn-undo').disabled=false; }
+function commit(fn){ snapshot(); fn(); saveSoon(); renderAll(); }
+function undo(){
+  if(!undoStack.length) return;
+  const views={}; S.worlds.forEach(w=>views[w.id]=w.view);
+  const mode=S.mode, pv=S.playerView;
+  S=JSON.parse(undoStack.pop()); S.mode=mode; S.playerView=pv;
+  S.worlds.forEach(w=>{ if(views[w.id]) w.view=views[w.id]; });
+  if(ui$.selected && !W().events.some(e=>e.id===ui$.selected)) ui$.selected=null;
+  $('#btn-undo').disabled=!undoStack.length;
+  saveSoon(); renderAll(); toast('Undone');
+}
+function deleteEvent(w,id){
+  w.events=w.events.filter(x=>x.id!==id);
+  w.events.forEach(e=>{ e.who=e.who.filter(x=>x!==id); e.ledTo=e.ledTo.filter(x=>x!==id); });
+  if(ui$.selected===id) ui$.selected=null;
+}
+
+/* ---------- derived ---------- */
+const catOf = (w,id) => w.categories.find(c=>c.id===id);
+const byId = (w,id) => w.events.find(e=>e.id===id);
+const evColor = (w,e) => e.color || (catOf(w,e.cat)||{}).color || '#5a6375';
+function visibleEv(w,e){ const c=catOf(w,e.cat); if(c ? c.hidden : w.hideUncat) return false; if(S.playerView && e.secret) return false; return true; }
+const hasEnd = e => e.kind==='period' && !!e.end;
+function evStart(w,e){ return unitStart(w.calendar,e.start,e.prec); }
+function evEnd(w,e){
+  const cal=w.calendar;
+  if(hasEnd(e)) return unitEnd(cal,e.end,e.prec);
+  if(e.kind==='life'){
+    if(e.end) return unitEnd(cal,e.end,e.prec);
+    /* still alive: the line runs to whichever is latest of now, their last appearance and their last phase */
+    let n=unitEnd(cal,e.start,e.prec);
+    if(w.now) n=Math.max(n,toDay(cal,w.now)+1);
+    for(const x of w.events) if(x.kind!=='life' && x.who.includes(e.id)) n=Math.max(n, hasEnd(x)?unitEnd(cal,x.end,x.prec):unitEnd(cal,x.start,x.prec));
+    for(const ph of (e.phases||[])) n=Math.max(n,toDay(cal,ph.start)+1);
+    return n;
+  }
+  return unitEnd(cal,e.start,e.prec);
+}
+function repeatLabel(e){ const r=e.repeat; if(!r) return ''; if(r.unit==='day') return r.every===1?'every day':`every ${r.every} days`; return r.every===1?'every year':`every ${r.every} years`; }
+function fmtEvDate(w,e,wd){
+  const cal=w.calendar, p=e.prec, a=e.approx;
+  if(e.kind==='life') return `${fmtP(cal,e.start,p,a,wd)} → ${e.end?fmtP(cal,e.end,p,a,wd):'alive'}`;
+  if(hasEnd(e)) return `${fmtP(cal,e.start,p,a,wd)} → ${fmtP(cal,e.end,p,a,wd)}`;
+  return fmtP(cal,e.start,p,a,wd) + (e.repeat?` · ${repeatLabel(e)}`:'');
+}
+function matches(w,e,q){
+  if(!q) return true; q=q.toLowerCase();
+  const c=catOf(w,e.cat);
+  const fields=[e.title,e.desc,e.tags.join(' '),c&&c.name,e.location];
+  if(!S.playerView) fields.push(e.dmNotes);
+  return fields.some(s=>(s||'').toLowerCase().includes(q));
+}
+/* occurrences of a repeating moment, as absolute days within [a, b] */
+function occurrences(w,e,a,b,limit){
+  const cal=w.calendar, r=e.repeat, out=[]; limit=limit||400;
+  if(!r || !(r.every>0)) return out;
+  const base=evStart(w,e);
+  if(r.unit==='day'){
+    const k=Math.max(0,Math.ceil((a-base)/r.every));
+    for(let n=base+k*r.every; n<=b && out.length<limit; n+=r.every) out.push(n);
+  } else {
+    const p=e.prec==='year'?'month':e.prec;
+    const y0=fromDay(cal,a).y-1;
+    let y=e.start.y+Math.max(0,Math.ceil((y0-e.start.y)/r.every))*r.every;
+    for(let guard=0; out.length<limit && guard<5000; y+=r.every, guard++){
+      const n=unitStart(cal,{y,m:e.start.m,d:e.start.d},p);
+      if(n>b) break; if(n>=a) out.push(n);
+    }
+  }
+  return out;
+}
+function involved(w,e){ return e.who.map(id=>byId(w,id)).filter(x=>x && visibleEv(w,x)); }
+function causes(w,e){ return w.events.filter(x=>x.ledTo.includes(e.id) && visibleEv(w,x)); }
+function effects(w,e){ return e.ledTo.map(id=>byId(w,id)).filter(x=>x && visibleEv(w,x)); }
+
+/* ---------- text measuring ---------- */
+const mctx=document.createElement('canvas').getContext('2d');
+const mcache=new Map();
+function tw(text,font){ const k=font+'|'+text; let v=mcache.get(k); if(v===undefined){ mctx.font=font; v=mctx.measureText(text).width; mcache.set(k,v); } return v; }
+const PILL_FONT='500 12.5px "Alegreya Sans","Segoe UI",system-ui,sans-serif';
+const LANE_FONT='500 12px "Alegreya Sans","Segoe UI",system-ui,sans-serif';
+const STRIP_FONT='italic 500 11px "Alegreya Sans","Segoe UI",system-ui,sans-serif';
+const TICK_FONT='400 10.5px "IBM Plex Mono",ui-monospace,monospace';
+
+/* ---------- timeline ---------- */
+const tl=$('#tl'), svg=$('#tl-svg'), mv=$('#mv'), gutterEl=$('#tl-gutter');
+let raf=0, lastAxisY=-1e9, recenterAxis=true;
+function schedule(){ if(!raf) raf=requestAnimationFrame(()=>{ raf=0; if(S.mode==='month') renderMonth(); else renderTimeline(); }); }
+const stageWidth = () => tl.clientWidth || mv.clientWidth || 900;
+
+function ensureView(){ const w=W(); if(!w.view || !isFinite(w.view.ppd) || !isFinite(w.view.start)) fitAll(true); }
+function fitAll(silent){
+  const w=W(), cal=w.calendar; let lo=Infinity, hi=-Infinity;
+  const pool=w.events.filter(e=>visibleEv(w,e)); const core=pool.filter(e=>e.kind!=='life');
+  for(const e of (core.length?core:pool)){ lo=Math.min(lo,evStart(w,e)); hi=Math.max(hi,evEnd(w,e)); }
+  if(w.now){ const n=toDay(cal,w.now); lo=Math.min(lo,n); hi=Math.max(hi,n+1); }
+  if(!isFinite(lo)){ lo=0; hi=avgYear(cal)*10; }
+  const span=Math.max(hi-lo,30), pad=span*0.06;
+  /* leave room on the left for the character name column */
+  const gutterW = w.events.some(e=>e.kind==='life' && visibleEv(w,e)) && w.charsOpen!==false ? 172 : 0;
+  const width=Math.max(200,stageWidth()-gutterW);
+  const ppd=clamp(width/(span+2*pad),MIN_PPD,MAX_PPD);
+  w.view={ppd, start:lo-pad-gutterW/ppd}; recenterAxis=true;
+  if(!silent){ saveSoon(); schedule(); }
+}
+function jumpNow(){
+  const w=W(); if(!w.now){ toast('Set a current date first'); openNowModal(); return; }
+  if(S.mode==='month'){ ui$.month={y:w.now.y,m:w.now.m}; schedule(); return; }
+  ensureView(); const n=toDay(w.calendar,w.now); w.view.start=n-(stageWidth()/2)/w.view.ppd; saveSoon(); schedule();
+}
+function centerOn(e){
+  const w=W(); ensureView(); const v=w.view, width=stageWidth();
+  if(S.mode==='month'){ ui$.month={y:e.start.y,m:e.start.m}; return; }
+  const a=evStart(w,e), b=evEnd(w,e);
+  if(e.kind!=='moment'){ const span=b-a, visible=width/v.ppd; if(span>visible*0.9 || span<visible*0.05) v.ppd=clamp(width/(span*1.5),MIN_PPD,MAX_PPD); }
+  v.start=(a+b)/2-(width/2)/v.ppd; saveSoon();
+}
+function zoomAt(factor,px){
+  const v=W().view; const d=v.start+px/v.ppd;
+  v.ppd=clamp(v.ppd*factor,MIN_PPD,MAX_PPD); v.start=d-px/v.ppd; saveSoon(); schedule();
+}
+function computeTicks(cal,start,end,ppd){
+  const out=[]; const ppy=avgYear(cal)*ppd;
+  if(ppd>=26){
+    for(let n=Math.floor(start);n<=Math.ceil(end);n++){ const dt=fromDay(cal,n); const major=dt.d===1;
+      out.push({day:n, major, center:true, label: major ? `${cal.months[dt.m].name} ${fmtYear(cal,dt.y)}` : String(dt.d)}); }
+    return out;
+  }
+  if(ppy>=420){
+    const y0=fromDay(cal,start).y, y1=fromDay(cal,end).y;
+    for(let y=y0;y<=y1;y++){ let n=daysBeforeYear(cal,y);
+      for(let m=0;m<cal.months.length;m++){ const ml=monthLen(cal,y,m); if(ml<=0) continue;
+        const name=m===0?fmtYear(cal,y):cal.months[m].name;
+        out.push({day:n, major:m===0, label:(m===0 || ml*ppd>=tw(name,TICK_FONT)+12)?name:''}); n+=ml; } }
+    return out;
+  }
+  const steps=[1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000,10000,20000,25000,50000,100000,200000,250000,500000,1000000];
+  const step=steps.find(s=>s*ppy>=84)||steps[steps.length-1];
+  const minor=step===1?1:(step%5===0?step/5:step/2);
+  const ys=fromDay(cal,start).y-step, ye=fromDay(cal,end).y+step;
+  for(let y=Math.floor(ys/minor)*minor; y<=ye; y+=minor){ const major=mod(y,step)===0; out.push({day:daysBeforeYear(cal,y), major, label:major?fmtYear(cal,y):''}); }
+  if(step===1 && ppy>=150){
+    for(let y=ys;y<=ye;y++){ let n=daysBeforeYear(cal,y); for(let m=0;m<cal.months.length;m++){ const ml=monthLen(cal,y,m); if(m>0 && ml>0) out.push({day:n,major:false,label:''}); n+=ml; } }
+  }
+  return out;
+}
+
+function renderTimeline(){
+  const w=W(), cal=w.calendar; ensureView();
+  const v=w.view, Wd=tl.clientWidth, Hd=tl.clientHeight;
+  if(!Wd) return;
+  const ppd=v.ppd, start=v.start, end=start+Wd/ppd;
+  const X=d=>(d-start)*ppd;
+  const q=ui$.query.trim();
+  const evs=w.events.filter(e=>visibleEv(w,e));
+  $('#tl-empty').hidden = evs.length>0;
+  const focus=ui$.focusChar && byId(w,ui$.focusChar);
+  const dimCls = e => ((q && !matches(w,e,q)) || (focus && e.id!==focus.id && !e.who.includes(focus.id))) ? ' dim' : '';
+  const hasChars=evs.some(e=>e.kind==='life'), charsOpen=w.charsOpen!==false;
+
+  const moms=[], pers=[], lives=[], strip=[];
+  for(const e of evs){
+    const s=evStart(w,e), en=evEnd(w,e);
+    if(e.kind==='moment' && e.repeat){
+      const unitPx=(e.repeat.unit==='day'?1:avgYear(cal))*e.repeat.every*ppd;
+      if(unitPx>=10) for(const n of occurrences(w,e,start-2,end+2,300)) strip.push({e,x:X(n+0.5)});
+    }
+    else if(e.kind==='life'){ if(!w.hiddenChars.includes(e.id)) lives.push({e,s,en,x1:X(s),x2:X(en),open:!e.end}); }
+    else if(hasEnd(e)) pers.push({e,x1:X(s),x2:X(en)});
+    else moms.push({e,x:X((s+en)/2)});
+  }
+  moms.sort((a,b)=>a.x-b.x);
+  const rowRight=[];
+  for(const m of moms){
+    m.w=Math.ceil(tw(m.e.title,PILL_FONT))+40;
+    const left=m.x-m.w/2; let r=0; while(r<rowRight.length && rowRight[r]+8>left) r++;
+    rowRight[r]=left+m.w; m.row=r;
+  }
+  const laneOf=list=>{ list.sort((a,b)=>a.x1-b.x1 || b.x2-a.x2); const right=[];
+    for(const p of list){ const lw=Math.ceil(tw(p.e.title,LANE_FONT))+22; const r=Math.max(p.x2,p.x1+lw);
+      let l=0; while(l<right.length && right[l]+10>p.x1) l++; right[l]=r; p.lane=l; } return right.length; };
+  const lanes=laneOf(pers); lives.sort((a,b)=>a.s-b.s || a.e.title.localeCompare(b.e.title));
+  const CROW=34, CHEAD=30;
+  const ROW=30, LANE=30, STRIP=strip.length?26:0;
+  const needTop=44+STRIP+rowRight.length*ROW;
+  const needBottom=44+lanes*LANE+(hasChars?CHEAD+(charsOpen?lives.length*CROW:0)+8:0)+34;
+  const H=Math.max(Hd-2, needTop+needBottom);
+  const axisY=Math.round(Math.max(needTop, Math.min(H-needBottom, H*0.56)));
+  /* keep the axis where the viewer last saw it; on first render, fit or world change put it 60% down the strip */
+  const axisVis = (recenterAxis || lastAxisY<-1e8) ? clamp(Hd*0.6, 40, Math.max(40,Hd-50)) : lastAxisY-tl.scrollTop;
+  recenterAxis=false;
+  lastAxisY=axisY;
+  const lifeTop=axisY+40+lanes*LANE+(lanes?6:0);
+  const pos={};
+  const vis=(a,b)=>b>=-300 && a<=Wd+300;
+  const out=['<defs><marker id="tk-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0 0L10 5L0 10z"/></marker></defs>'];
+
+  for(const p of pers){ if(!p.e.line || !vis(p.x1,p.x2)) continue;
+    out.push(`<rect x="${p.x1.toFixed(1)}" y="0" width="${Math.max(1,p.x2-p.x1).toFixed(1)}" height="${H}" fill="${evColor(w,p.e)}" style="fill-opacity:var(--band-op)" class="${dimCls(p.e)}"/>`); }
+  const ticks=computeTicks(cal,start,end,ppd), tickOut=[]; let lastLabelRight=-1e9;
+  for(const t of ticks){
+    const x=t.center?X(t.day+0.5):X(t.day); if(x<-80||x>Wd+80) continue;
+    if(t.major) out.push(`<line class="grid" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="0" y2="${H}"/>`);
+    tickOut.push(t.major?`<circle class="tickdot" cx="${x.toFixed(1)}" cy="${axisY}" r="3.5"/>`:`<line class="tick" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${axisY-4}" y2="${axisY+4}"/>`);
+    if(t.label){ const lw=tw(t.label,TICK_FONT);
+      if(x-lw/2>lastLabelRight+6 || t.major){ tickOut.push(`<text class="ticklbl${t.major?' major':''}" x="${x.toFixed(1)}" y="${axisY+19}" text-anchor="middle">${esc(t.label)}</text>`); lastLabelRight=x+lw/2; } }
+  }
+  for(const m of moms){ if(!m.e.line || !vis(m.x,m.x)) continue;
+    out.push(`<line x1="${m.x.toFixed(1)}" x2="${m.x.toFixed(1)}" y1="0" y2="${H}" stroke="${evColor(w,m.e)}" stroke-width="1.6" stroke-opacity=".75"${m.e.prec!=='day'?' stroke-dasharray="5 4"':''} class="${dimCls(m.e)}"/>`); }
+  for(const s of w.sessionLog){ if(!s.now) continue; const sx=X(toDay(cal,s.now)+0.5); if(sx<-30||sx>Wd+30) continue;
+    out.push(`<line class="sesline" x1="${sx.toFixed(1)}" x2="${sx.toFixed(1)}" y1="${axisY+6}" y2="${H-40}"/><text class="seslbl" x="${sx.toFixed(1)}" y="${H-30}" text-anchor="middle">S${esc(s.n)}</text>`); }
+  let nowOut='';
+  if(w.now){ const nx=X(toDay(cal,w.now)+0.5);
+    if(nx>-50 && nx<Wd+50){
+      const lbl='Now · '+fmtDate(cal,w.now), lw=tw(lbl,'500 11px "IBM Plex Mono",monospace')+14, lx=clamp(nx-lw/2,4,Wd-lw-4);
+      out.push(`<line class="nowline" x1="${nx.toFixed(1)}" x2="${nx.toFixed(1)}" y1="0" y2="${H}"/>`);
+      nowOut=`<rect class="nowpill" x="${lx.toFixed(1)}" y="${H-24}" width="${lw.toFixed(1)}" height="19" rx="9.5"/><text class="nowtxt" x="${(lx+lw/2).toFixed(1)}" y="${H-10.5}" text-anchor="middle">${esc(lbl)}</text>`;
+    } }
+  out.push(`<line class="axis" x1="0" x2="${Wd}" y1="${axisY}" y2="${axisY}"/>`);
+  out.push(...tickOut);
+  if(strip.length){ strip.sort((a,b)=>a.x-b.x);
+    /* a label goes after a marker only when it fits before the next marker; an event with no room anywhere gets one label on a backing plate */
+    const labelled=new Set(), plates=[]; let lastR=-1e9;
+    strip.forEach((o,i)=>{ const nx=Math.min(i+1<strip.length?strip[i+1].x:Infinity, Wd); o.lw=tw(o.e.title,STRIP_FONT);
+      if(o.x>-40 && o.x<Wd+40 && nx-o.x>o.lw+14 && o.x+5>lastR+6){ o.label=true; lastR=o.x+5+o.lw; labelled.add(o.e.id); } });
+    for(const o of strip){ if(labelled.has(o.e.id) || o.x<0 || o.x>Wd) continue; labelled.add(o.e.id); o.plate=true; }
+    for(const o of strip){ if(o.x<-40||o.x>Wd+40) continue; const c=evColor(w,o.e);
+      let g=`<g class="ev${dimCls(o.e)}" data-id="${o.e.id}"><title>${esc(o.e.title)} (${esc(repeatLabel(o.e))})</title><rect x="${(o.x-5).toFixed(1)}" y="4" width="10" height="18" fill="transparent"/><line x1="${o.x.toFixed(1)}" x2="${o.x.toFixed(1)}" y1="6" y2="20" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>`;
+      if(o.label) g+=`<text class="striptxt" x="${(o.x+5).toFixed(1)}" y="17" fill="${c}">${esc(o.e.title)}</text>`;
+      out.push(g+'</g>');
+      if(o.plate) plates.push(`<g class="ev${dimCls(o.e)}" data-id="${o.e.id}"><rect x="${(o.x+4).toFixed(1)}" y="6" width="${(tw('↻ '+o.e.title,STRIP_FONT)+16).toFixed(1)}" height="15" rx="7.5" fill="${c}"/><text x="${(o.x+10).toFixed(1)}" y="17" class="striptxt" fill="${textOn(c)}">↻ ${esc(o.e.title)}</text></g>`);
+    }
+    out.push(...plates);
+  }
+  const laneG=(p,y,isLife)=>{
+    const e=p.e, c=evColor(w,e), sel=ui$.selected===e.id, x1=p.x1, x2=Math.max(p.x2,p.x1+2);
+    const lx=Math.max(x1+2,Math.min(4,x2-60));
+    const dash=e.prec!=='day'||e.approx?' stroke-dasharray="7 4"':'';
+    const secret=e.secret?`<line x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y+10}" y2="${y+10}" stroke="${c}" stroke-width="1.2" stroke-dasharray="2 3"/>`:'';
+    const label=isLife?`${e.title}${e.end?' †':''}`:e.title;
+    const bar = isLife
+      ? `<rect x="${x1.toFixed(1)}" y="${y-2}" width="${(x2-x1).toFixed(1)}" height="8" rx="4" fill="${c}" fill-opacity="${sel?.75:.45}"${dash?` stroke="${c}"${dash}`:''}/>${p.open?`<path d="M${x2.toFixed(1)} ${y-4}l7 6-7 6z" fill="${c}"/>`:''}`
+      : `<line x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y+2}" y2="${y+2}" stroke="${c}" stroke-width="${sel?5:3}" stroke-linecap="round"${dash}/><line x1="${x1.toFixed(1)}" x2="${x1.toFixed(1)}" y1="${y-2}" y2="${y+6}" stroke="${c}" stroke-width="2"/><line x1="${x2.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y-2}" y2="${y+6}" stroke="${c}" stroke-width="2"/>`;
+    return `<g class="ev${dimCls(e)}" data-id="${e.id}" data-x1="${x1.toFixed(1)}" data-x2="${x2.toFixed(1)}" data-open="${p.open?1:0}"><title>${esc(e.title)}\n${esc(fmtEvDate(w,e))}</title><rect x="${x1.toFixed(1)}" y="${y-17}" width="${(x2-x1).toFixed(1)}" height="26" fill="transparent"/>${bar}${secret}<text class="lanetxt" x="${lx.toFixed(1)}" y="${y-6}" fill="${c}"${sel?' font-weight="700"':''}>${esc(label)}</text></g>`;
+  };
+  const place=(p,y)=>{ pos[p.e.id]={x:clamp((Math.max(p.x1,0)+Math.min(p.x2,Wd))/2,0,Wd), y:y+2}; };
+  for(const p of pers){ const y=axisY+40+p.lane*LANE; place(p,y); if(vis(p.x1,Math.max(p.x2,p.x1+200))) out.push(laneG(p,y,false)); }
+  const gut=[];
+  if(hasChars){
+    const centerDt=fromDay(cal,start+Wd/2/ppd), centerDay=toDay(cal,centerDt);
+    out.push(`<text class="sectlbl" x="8" y="${lifeTop+17}">CHARACTERS</text>`);
+    const shown=lives.length, total=evs.filter(e=>e.kind==='life').length;
+    gut.push(`<div class="gut-head" style="top:${lifeTop}px"><button class="grow" data-gut="toggle" title="Show or hide the character lines">${charsOpen?'▾':'▸'} Characters ${shown}${shown!==total?'/'+total:''}</button><button data-gut="choose" title="Choose which characters to follow">Choose</button></div>`);
+    if(charsOpen) lives.forEach((p,i)=>{
+      const c=p.e, col=evColor(w,c), y=lifeTop+CHEAD+i*CROW+16;
+      const apps=evs.filter(x=>x.kind!=='life' && x.who.includes(c.id)).map(x=>({x,s:evStart(w,x),en:evEnd(w,x)}));
+      const x1=p.x1, x2=Math.max(p.x2,p.x1+2), dimC=dimCls(c);
+      pos[c.id]={x:clamp((Math.max(x1,0)+Math.min(x2,Wd))/2,0,Wd),y};
+      let g=`<g class="ev${dimC}" data-id="${c.id}" data-x1="${x1.toFixed(1)}" data-x2="${x2.toFixed(1)}" data-open="${p.open?1:0}"><title>${esc(c.title)}\n${esc(fmtEvDate(w,c))}</title><rect x="${x1.toFixed(1)}" y="${y-11}" width="${(x2-x1).toFixed(1)}" height="22" fill="transparent"/>`;
+      // phases: tinted bands with a label below the line
+      const phs=[...c.phases].sort((a,b)=>toDay(cal,a.start)-toDay(cal,b.start));
+      phs.forEach((ph,k)=>{ const ps=Math.max(toDay(cal,ph.start),p.s), pe=k+1<phs.length?toDay(cal,phs[k+1].start):p.en; if(pe<=ps) return;
+        const a=X(ps), b=X(pe); if(b<-50||a>Wd+50) return;
+        g+=`<rect x="${a.toFixed(1)}" y="${y-9}" width="${Math.max(1,b-a).toFixed(1)}" height="18" rx="4" fill="${ph.color}" fill-opacity=".2"/>`;
+        if(ph.label) g+=`<text class="lanetxt" x="${Math.max(a+4,174).toFixed(1)}" y="${y+21}" fill="${ph.color}" style="font-size:10.5px">${esc(ph.label)}</text>`; });
+      // whole life: faint dotted line; on-stage span (first to last appearance): solid
+      g+=`<line x1="${x1.toFixed(1)}" x2="${x2.toFixed(1)}" y1="${y}" y2="${y}" stroke="${col}" stroke-width="2" stroke-dasharray="2 4" stroke-opacity=".7"/>`;
+      if(apps.length){ const fa=Math.min(...apps.map(a=>a.s)), la=Math.max(...apps.map(a=>a.en));
+        g+=`<line x1="${X(fa).toFixed(1)}" x2="${X(la).toFixed(1)}" y1="${y}" y2="${y}" stroke="${col}" stroke-width="${ui$.selected===c.id?6:4}" stroke-linecap="round"/>`; }
+      g+=`<line x1="${x1.toFixed(1)}" x2="${x1.toFixed(1)}" y1="${y-6}" y2="${y+6}" stroke="${col}" stroke-width="2"/>`;
+      if(c.end) g+=`<text x="${(x2+4).toFixed(1)}" y="${y+4}" fill="${col}" style="font-size:13px;font-weight:700">†</text>`;
+      else if(p.open) g+=`<path d="M${x2.toFixed(1)} ${y-5}l7 5-7 5z" fill="${col}"/>`;
+      g+='</g>';
+      out.push(`<text class="lanetxt" x="8" y="${y+4}" fill="${col}">${esc(c.title)}</text>`);
+      out.push(g);
+      // appearances as markers on the line
+      for(const a of apps){ const e=a.x, ec=evColor(w,e), age=ageNote(w,c,e.start,e.prec);
+        const tip=`<title>${esc(e.title)}\n${esc(fmtEvDate(w,e))}${age?'\n'+esc(c.title)+': '+esc(age):''}</title>`;
+        if(hasEnd(e)){ const a1=X(a.s), a2=Math.max(X(a.en),a1+10); if(a2<-20||a1>Wd+20) continue;
+          out.push(`<g class="ev${dimCls(e)}" data-id="${e.id}">${tip}<rect x="${a1.toFixed(1)}" y="${y-5}" width="${(a2-a1).toFixed(1)}" height="10" rx="5" fill="${ec}" stroke="var(--surface)" stroke-width="1.5"/></g>`); }
+        else { const cx=X((a.s+a.en)/2); if(cx<-20||cx>Wd+20) continue;
+          out.push(`<g class="ev${dimCls(e)}" data-id="${e.id}">${tip}<circle cx="${cx.toFixed(1)}" cy="${y}" r="9" fill="${ec}" stroke="var(--surface)" stroke-width="2"/><g transform="translate(${(cx-5.4).toFixed(1)} ${y-5.4}) scale(.45)" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="color:${textOn(ec)}">${ICONS[e.icon]||ICONS.dot}</g></g>`); }
+      }
+      // gutter: name, colour and age at the centre of the view
+      let age='';
+      if(centerDay<p.s) age='unborn'; else if(c.end && centerDay>=p.en) age='†'; else { const n=ageAt(c.start,c.prec,centerDt); age=(c.approx||c.prec!=='day'?'c. ':'')+n; }
+      gut.push(`<div class="gut-row${focus&&focus.id===c.id?' focus':''}" style="top:${y-15}px" data-char="${c.id}" title="Click to highlight ${esc(c.title)}'s events · double-click to edit"><span class="ev-ico life" style="background:${col};color:${textOn(col)}">${icon(c.icon)}</span><span class="gut-name">${esc(c.title)}</span><span class="gut-age" title="Age at the centre of the view">${esc(age)}</span></div>`);
+    });
+  }
+  for(const m of moms){
+    const e=m.e, top=axisY-36-m.row*ROW; pos[e.id]={x:m.x,y:top+11};
+    if(!vis(m.x-m.w/2,m.x+m.w/2)) continue;
+    const c=evColor(w,e), tc=textOn(c), sel=ui$.selected===e.id, left=m.x-m.w/2;
+    out.push(`<g class="ev${dimCls(e)}" data-id="${e.id}"><title>${esc(e.title)}\n${esc(fmtEvDate(w,e))}</title>`+
+      `<line x1="${m.x.toFixed(1)}" x2="${m.x.toFixed(1)}" y1="${top+22}" y2="${axisY-5}" stroke="${c}" stroke-width="1.5"${e.prec!=='day'||e.approx?' stroke-dasharray="3 3"':''}/>`+
+      `<rect x="${(m.x-4.5).toFixed(1)}" y="${axisY-4.5}" width="9" height="9" fill="${c}" transform="rotate(45 ${m.x.toFixed(1)} ${axisY})"/>`+
+      `<path class="pill" d="M${(m.x-5).toFixed(1)} ${top+21}l5 6 5-6z" fill="${c}"/>`+
+      `<rect class="pill" x="${left.toFixed(1)}" y="${top}" width="${m.w}" height="22" rx="5" fill="${c}"${e.secret?` stroke="${tc}" stroke-width="1.3" stroke-dasharray="3 2"`:''}/>`+
+      (sel?`<rect class="sel-ring" x="${(left-3).toFixed(1)}" y="${top-3}" width="${m.w+6}" height="28" rx="7"/>`:'')+
+      `<g transform="translate(${(left+9).toFixed(1)} ${top+4}) scale(.6)" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="color:${tc}">${ICONS[e.icon]||ICONS.dot}</g>`+
+      `<text class="pilltxt" x="${(left+30).toFixed(1)}" y="${top+15.5}" fill="${tc}">${esc(e.title)}</text></g>`);
+  }
+  const sel=ui$.selected && byId(w,ui$.selected);
+  if(sel && visibleEv(w,sel)){
+    const pairs=[...causes(w,sel).map(x=>[x.id,sel.id]), ...effects(w,sel).map(x=>[sel.id,x.id])];
+    for(const [a,b] of pairs){ const A=pos[a], B=pos[b]; if(!A||!B) continue;
+      const lift=Math.max(8,Math.min(A.y,B.y)-50), mx=(A.x+B.x)/2;
+      out.push(`<path class="relline" d="M${A.x.toFixed(1)} ${A.y} Q${mx.toFixed(1)} ${lift} ${B.x.toFixed(1)} ${B.y}" marker-end="url(#tk-arrow)"/>`); }
+  }
+  out.push(nowOut);
+  svg.setAttribute('width',Wd); svg.setAttribute('height',H); svg.setAttribute('viewBox',`0 0 ${Wd} ${H}`);
+  svg.innerHTML=out.join('');
+  gutterEl.innerHTML=gut.join(''); gutterEl.style.height=H+'px';
+  tl.scrollTop=Math.max(0,axisY-axisVis);
+  const a=fromDay(cal,start), b=fromDay(cal,end), ppy=avgYear(cal)*ppd;
+  $('#range').textContent = ppy>=420 ? `${fmtDate(cal,a)} – ${fmtDate(cal,b)}` : `${fmtYear(cal,a.y)} – ${fmtYear(cal,b.y)}`;
+}
+
+/* ---------- pan / zoom input ---------- */
+const pointers=new Map(); let drag=null, pinch=null, lastDownTarget=null;
+const AXIS_HIT=14;
+const ghost=$('#tl-ghost'), ghostLbl=$('#tl-ghost-lbl');
+/* point in timeline coordinates: x from the left edge, y inside the scrolled svg */
+function tlPoint(e){ const r=svg.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function onAxis(e){ const pt=tlPoint(e); return Math.abs(pt.y-lastAxisY)<=AXIS_HIT; }
+/* precision that matches what the zoom level lets you see */
+function zoomPrecision(){ const cal=W().calendar, ppd=W().view.ppd, avgMonth=avgYear(cal)/Math.max(1,cal.months.length);
+  if(ppd>=6) return 'day'; if(avgMonth*ppd>=24) return 'month'; return 'year'; }
+function snapDate(dt,p){ if(p==='year') return {y:dt.y,m:0,d:1}; if(p==='month') return {y:dt.y,m:dt.m,d:1}; return dt; }
+function dayAtX(x){ const v=W().view; return v.start+x/v.ppd; }
+function updateGhost(){
+  if(!drag || !drag.create) { ghost.hidden=true; return; }
+  const a=Math.min(drag.create.x0,drag.create.x1), b=Math.max(drag.create.x0,drag.create.x1);
+  const cal=W().calendar, p=zoomPrecision();
+  const d0=snapDate(fromDay(cal,dayAtX(a)),p), d1=snapDate(fromDay(cal,dayAtX(b)),p);
+  ghost.hidden=false; ghost.style.left=a+'px'; ghost.style.width=Math.max(2,b-a)+'px'; ghost.style.top=(lastAxisY-13)+'px';
+  ghostLbl.textContent = b-a<4 ? fmtP(cal,d0,p,p!=='day') : `${fmtP(cal,d0,p,p!=='day')} → ${fmtP(cal,d1,p,p!=='day')}`;
+}
+function createFromAxis(x0,x1){
+  const cal=W().calendar, p=zoomPrecision(), approx=p!=='day';
+  const a=Math.min(x0,x1), b=Math.max(x0,x1);
+  const start=snapDate(fromDay(cal,dayAtX(a)),p);
+  if(b-a<4){ openEventEditor(null,{start,prec:p,approx,kind:'moment'}); return; }
+  const end=snapDate(fromDay(cal,dayAtX(b)),p);
+  openEventEditor(null,{start,end,prec:p,approx,kind:'period'});
+}
+/* ---------- drag an event to a new date ---------- */
+const PREC_RANK={day:0,month:1,year:2};
+const dragTip=document.createElement('div'); dragTip.className='drag-tip'; dragTip.hidden=true; document.body.appendChild(dragTip);
+function shiftDate(cal,dt,unit,k){ if(!k) return {...dt}; if(unit==='day') return fromDay(cal,toDay(cal,dt)+k); if(unit==='month') return addMonths(cal,dt,k); return addYears(cal,dt,k); }
+function edgeAt(g,x){
+  if(!g || g.dataset.x1===undefined) return 'move';
+  const x1=+g.dataset.x1, x2=+g.dataset.x2; if(x2-x1<24) return 'move';
+  if(Math.abs(x-x1)<=7) return 'start';
+  if(Math.abs(x-x2)<=7 && g.dataset.open!=='1') return 'end';
+  return 'move';
+}
+function beginMove(g,e){
+  const ev=byId(W(),g.getAttribute('data-id')); if(!ev) return null;
+  return {id:ev.id, mode:edgeAt(g,tlPoint(e).x), start:{...ev.start}, end:ev.end?{...ev.end}:null, started:false};
+}
+function applyMove(mv,dxPx){
+  const w=W(), cal=w.calendar, e=byId(w,mv.id); if(!e) return;
+  const unit=[zoomPrecision(),e.prec].sort((a,b)=>PREC_RANK[b]-PREC_RANK[a])[0];
+  const unitPx=w.view.ppd*(unit==='day'?1:unit==='month'?avgYear(cal)/Math.max(1,cal.months.length):avgYear(cal));
+  const k=Math.round(dxPx/unitPx);
+  if(mv.mode==='move'){ e.start=shiftDate(cal,mv.start,unit,k); if(mv.end) e.end=shiftDate(cal,mv.end,unit,k); }
+  else if(mv.mode==='start'){ let ns=shiftDate(cal,mv.start,unit,k); if(mv.end && toDay(cal,ns)>toDay(cal,mv.end)) ns={...mv.end}; e.start=ns; }
+  else if(mv.mode==='end'){ let ne=shiftDate(cal,mv.end,unit,k); if(toDay(cal,ne)<toDay(cal,mv.start)) ne={...mv.start}; e.end=ne; }
+  mv.k=k;
+  return e;
+}
+gutterEl.addEventListener('click',e=>{
+  const b=e.target.closest('[data-gut]');
+  if(b){ const w=W(); if(b.dataset.gut==='toggle'){ w.charsOpen=w.charsOpen===false; saveSoon(); schedule(); } else openCharsModal(); return; }
+  const r=e.target.closest('[data-char]'); if(!r) return;
+  ui$.focusChar = ui$.focusChar===r.dataset.char ? null : r.dataset.char;
+  select(r.dataset.char,false);
+  if(ui$.focusChar) toast('Highlighting '+(byId(W(),ui$.focusChar)||{}).title+"'s events. Click the name again to clear");
+});
+gutterEl.addEventListener('dblclick',e=>{ const r=e.target.closest('[data-char]'); if(r){ e.stopPropagation(); openEventEditor(byId(W(),r.dataset.char)); } });
+function openCharsModal(){
+  const w=W(); const chars=w.events.filter(e=>e.kind==='life' && visibleEv(w,e)).sort((a,b)=>a.title.localeCompare(b.title));
+  const ov=openModal('Follow characters',`<p class="help">Choose which character lines appear on the timeline. Hidden characters keep their data and still show in the list.</p>
+    <div class="pick-box" style="max-height:320px">${chars.map(c=>`<label class="check"><input type="checkbox" value="${c.id}"${w.hiddenChars.includes(c.id)?'':' checked'}><span>${esc(c.title)}</span></label>`).join('')}</div>
+    <div class="modal-foot"><button class="btn left" id="ch-all">Show all</button><button class="btn" data-close2>Cancel</button><button class="btn primary" id="ch-save">Save</button></div>`);
+  ov.querySelector('[data-close2]').onclick=closeModal;
+  $('#ch-all',ov).onclick=()=>$$('input[type=checkbox]',ov).forEach(x=>x.checked=true);
+  $('#ch-save',ov).onclick=()=>{ const hide=$$('input[type=checkbox]',ov).filter(x=>!x.checked).map(x=>x.value); closeModal(); commit(()=>{ w.hiddenChars=hide; w.charsOpen=true; }); };
+}
+tl.addEventListener('pointerdown',e=>{
+  if(e.button!==0 && e.pointerType==='mouse') return;
+  if(e.target.closest && e.target.closest('#tl-gutter')) return;
+  lastDownTarget=e.target; hidePop();
+  tl.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===1){
+    drag={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:false,target:e.target};
+    const g=e.target.closest && e.target.closest('[data-id]');
+    if(g) drag.move=beginMove(g,e);
+    else if(onAxis(e)){ const x=tlPoint(e).x; drag.create={x0:x,x1:x}; updateGhost(); }
+  }
+  else if(pointers.size===2){ const [p,q]=[...pointers.values()]; pinch={d:Math.hypot(p.x-q.x,p.y-q.y)}; drag=null; }
+});
+tl.addEventListener('pointermove',e=>{
+  if(!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch && pointers.size===2){ const [p,q]=[...pointers.values()]; const d=Math.hypot(p.x-q.x,p.y-q.y);
+    const rect=tl.getBoundingClientRect(); if(pinch.d>0) zoomAt(d/pinch.d,(p.x+q.x)/2-rect.left); pinch.d=d; return; }
+  if(!drag) return;
+  if(drag.create){ drag.create.x1=clamp(tlPoint(e).x,0,tl.clientWidth); if(Math.abs(drag.create.x1-drag.create.x0)>4) drag.moved=true; updateGhost(); return; }
+  if(drag.move){
+    if(!drag.moved && Math.abs(e.clientX-drag.sx)>5){ drag.moved=true; snapshot(); tl.classList.add('moving'); }
+    if(!drag.moved) return;
+    const ev=applyMove(drag.move,e.clientX-drag.sx); if(!ev) return;
+    ui$.selected=ev.id;
+    const lbl={move:'',start:'Start: ',end:'End: '}[drag.move.mode];
+    dragTip.textContent=lbl+(drag.move.mode==='end'?fmtP(W().calendar,ev.end,ev.prec,ev.approx):drag.move.mode==='start'?fmtP(W().calendar,ev.start,ev.prec,ev.approx):fmtEvDate(W(),ev));
+    dragTip.hidden=false; dragTip.style.left=(e.clientX+14)+'px'; dragTip.style.top=(e.clientY+16)+'px';
+    schedule(); return;
+  }
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(!drag.moved && Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>4){ drag.moved=true; tl.classList.add('dragging'); }
+  if(drag.moved){ const v=W().view; v.start-=dx/v.ppd; tl.scrollTop-=dy; drag.x=e.clientX; drag.y=e.clientY; schedule(); }
+});
+function endPointer(e){
+  pointers.delete(e.pointerId);
+  if(pointers.size<2) pinch=null;
+  if(drag && pointers.size===0){
+    tl.classList.remove('dragging');
+    if(drag.create){ const c=drag.create; drag=null; ghost.hidden=true; if(e.type==='pointerup') createFromAxis(c.x0,c.x1); return; }
+    if(drag.move && drag.moved){
+      const mv=drag.move; drag=null; dragTip.hidden=true; tl.classList.remove('moving');
+      if(e.type==='pointercancel' || !mv.k){ const ev=byId(W(),mv.id); if(ev){ ev.start=mv.start; ev.end=mv.end; } undoStack.pop(); renderAll(); return; }
+      saveSoon(); renderAll(); toast('Moved. Ctrl+Z to undo'); return;
+    }
+    if(drag.moved) saveSoon();
+    else if(e.type==='pointerup'){ const g=drag.target.closest && drag.target.closest('[data-id]'); const id=g?g.getAttribute('data-id'):null; select(id,false); if(id) showPop(id,e.clientX,e.clientY); }
+    drag=null;
+  }
+}
+tl.addEventListener('pointermove',e=>{ if(pointers.size) return;
+  const g=e.target.closest&&e.target.closest('[data-id]');
+  const hit=!g && onAxis(e); tl.classList.toggle('on-axis',hit);
+  const edge=g?edgeAt(g,tlPoint(e).x):'move'; tl.classList.toggle('on-edge',!!g && edge!=='move');
+  tl.title=hit?'Click to add a moment here, or drag along the axis to add a period':(g?(edge==='move'?'Drag left or right to move':'Drag to change the '+edge+' date'):''); });
+tl.addEventListener('pointerleave',()=>{ tl.classList.remove('on-axis'); tl.classList.remove('on-edge'); });
+tl.addEventListener('pointerup',endPointer);
+tl.addEventListener('pointercancel',endPointer);
+tl.addEventListener('wheel',e=>{
+  e.preventDefault(); hidePop();
+  const rect=tl.getBoundingClientRect();
+  if(Math.abs(e.deltaX)>Math.abs(e.deltaY) || e.shiftKey){ const v=W().view; v.start+=(e.deltaX||e.deltaY)/v.ppd; saveSoon(); schedule(); return; }
+  const k=e.deltaMode===1?40:1; zoomAt(Math.exp(-e.deltaY*k*0.0018), e.clientX-rect.left);
+},{passive:false});
+tl.addEventListener('dblclick',e=>{
+  if(e.target.closest && e.target.closest('#tl-gutter')) return;
+  hidePop();
+  const t=(lastDownTarget && lastDownTarget.closest) ? lastDownTarget : e.target;
+  const g=t.closest('[data-id]');
+  if(g){ openEventEditor(byId(W(),g.getAttribute('data-id'))); return; }
+  const rect=tl.getBoundingClientRect(), v=W().view;
+  openEventEditor(null,{start:fromDay(W().calendar,v.start+(e.clientX-rect.left)/v.ppd)});
+});
+new ResizeObserver(()=>schedule()).observe(tl);
+new ResizeObserver(()=>schedule()).observe(mv);
+
+/* ---------- event popover ---------- */
+const pop=document.createElement('div'); pop.className='pop'; pop.hidden=true; pop.setAttribute('role','dialog'); pop.setAttribute('aria-label','Event summary');
+document.body.appendChild(pop);
+function hidePop(){ pop.hidden=true; pop.dataset.id=''; }
+function showPop(id,cx,cy){
+  const w=W(), e=byId(w,id); if(!e) return;
+  const c=evColor(w,e), cat=catOf(w,e.cat);
+  pop.dataset.id=id;
+  pop.innerHTML=`<div class="pop-head"><span class="ev-ico ${e.kind}" style="background:${c};color:${textOn(c)}">${icon(e.icon)}</span><div class="pop-t"><b>${esc(e.title)}</b><span>${esc(fmtEvDate(w,e))}</span></div><button class="icon-btn sm" data-pop="close" aria-label="Close">${ui('x')}</button></div>
+    ${cat||e.secret||e.location?`<div class="pop-cat" style="color:${c}">${cat?`<span>${esc(cat.name)}</span>`:''}${e.location?`<span style="color:var(--muted)">${esc(e.location)}</span>`:''}${e.secret?'<span class="badge secret">Secret</span>':''}</div>`:''}
+    <div class="md${e.desc?'':' empty'}">${e.desc?md(e.desc):'No description yet. Press Edit to add one.'}</div>
+    <div class="pop-actions"><button class="btn primary" data-pop="edit">${ui('edit')}Edit</button><button class="btn" data-pop="more">More details</button></div>`;
+  pop.hidden=false;
+  const r=pop.getBoundingClientRect(), vw=window.innerWidth, vh=window.innerHeight;
+  let x=cx+12, y=cy+12;
+  if(x+r.width>vw-12) x=Math.max(12,cx-r.width-12);
+  if(y+r.height>vh-12) y=Math.max(12,cy-r.height-12);
+  pop.style.left=x+'px'; pop.style.top=y+'px';
+}
+pop.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-pop]'); if(!b) return;
+  const e=byId(W(),pop.dataset.id), a=b.dataset.pop;
+  hidePop();
+  if(a==='edit' && e) openEventEditor(e);
+  else if(a==='more'){ const d=$('#detail'); d.scrollTop=0; d.closest('.pane').scrollIntoView({behavior:'smooth',block:'nearest'}); }
+});
+document.addEventListener('pointerdown',ev=>{ if(!pop.hidden && !pop.contains(ev.target) && !tl.contains(ev.target) && !mv.contains(ev.target)) hidePop(); });
+window.addEventListener('resize',hidePop);
+
+/* ---------- month view ---------- */
+function monthCursor(){
+  const w=W(), cal=w.calendar;
+  if(!ui$.month){ const base=w.now || (w.view ? fromDay(cal,w.view.start+(stageWidth()/2)/w.view.ppd) : {y:1,m:0}); ui$.month={y:base.y,m:base.m}; }
+  ui$.month.m=clamp(ui$.month.m,0,cal.months.length-1);
+  return ui$.month;
+}
+function stepMonth(k){ const cal=W().calendar, c=monthCursor(); const t=addMonths(cal,{y:c.y,m:c.m,d:1},k); ui$.month={y:t.y,m:t.m}; hidePop(); schedule(); }
+function renderMonth(){
+  const w=W(), cal=w.calendar, {y,m}=monthCursor();
+  const ml=monthLen(cal,y,m), mon=cal.months[m];
+  $('#mv-label').textContent=`${mon.name} ${fmtYear(cal,y)}`;
+  $('#range').textContent=`${ml} day${ml===1?'':'s'}`;
+  if(ml<=0){ mv.innerHTML=`<div class="mv-empty">${esc(mon.name)} has no days in ${esc(fmtYear(cal,y))}. It only appears in leap years.</div>`; return; }
+  const first=toDay(cal,{y,m,d:1}), last=first+ml-1;
+  const nWd=cal.weekdays.length, cols=nWd||7;
+  const offset=nWd?mod(first+(+cal.epochWeekday||0),nWd):0;
+  const q=ui$.query.trim();
+  const days=Array.from({length:ml},()=>({items:[],bars:[]}));
+  const extra=[];
+  const nowDay=w.now?toDay(cal,w.now):null;
+  const chip=(e,label,soft)=>{ const c=evColor(w,e); const dim=q&&!matches(w,e,q)?';opacity:.3':'';
+    return `<button class="mv-item${soft?' soft':''}" data-id="${e.id}" aria-current="${ui$.selected===e.id}" title="${esc(e.title)} · ${esc(fmtEvDate(w,e))}" style="background:${c};color:${soft?c:textOn(c)}${dim}">${icon(e.icon)}<span>${esc(label)}</span></button>`; };
+  for(const e of w.events){ if(!visibleEv(w,e)) continue;
+    if(e.kind==='moment' && e.repeat){ for(const n of occurrences(w,e,first,last,60)) days[n-first].items.push(chip(e,'↻ '+e.title,true)); continue; }
+    const s=evStart(w,e), en=evEnd(w,e);
+    if(en<=first || s>last) continue;
+    if(e.prec!=='day'){ if(e.kind==='moment'||s>=first) extra.push(chip(e,`${e.title} (${fmtP(cal,e.start,e.prec,e.approx)})`,true)); continue; }
+    if(e.kind==='moment'){ days[s-first].items.push(chip(e,e.title)); continue; }
+    if(e.kind==='life'){
+      if(s>=first) days[s-first].items.push(chip(e,`${e.title} born`,true));
+      if(e.end){ const d=toDay(cal,e.end); if(d>=first && d<=last) days[d-first].items.push(chip(e,`${e.title} dies`,true)); }
+      continue; }
+    const c=evColor(w,e);
+    for(let n=Math.max(s,first); n<Math.min(en,last+1); n++) days[n-first].bars.push(`<span style="background:${c}" title="${esc(e.title)}"></span>`);
+    if(s>=first) days[s-first].items.push(chip(e,'▸ '+e.title));
+    else days[0].items.push(chip(e,'… '+e.title,true));
+  }
+  let html='';
+  if(extra.length) html+=`<div class="mv-extra"><span class="lbl">No exact day</span>${extra.join('')}</div>`;
+  html+=`<div class="mv-grid" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">`;
+  if(nWd) html+=cal.weekdays.map(d=>`<div class="mv-head" title="${esc(d)}">${esc(d)}</div>`).join('');
+  for(let i=0;i<offset;i++) html+='<div class="mv-cell pad"></div>';
+  days.forEach((d,i)=>{ const n=first+i, isNow=n===nowDay, shown=d.items.slice(0,4);
+    html+=`<div class="mv-cell${isNow?' now':''}" data-day="${n}"><div class="mv-num"><b>${i+1}</b>${isNow?'<span style="color:var(--accent)">Now</span>':''}</div>${d.bars.length?`<div class="mv-bars">${d.bars.slice(0,4).join('')}</div>`:''}${shown.join('')}${d.items.length>4?`<span class="mv-more">+${d.items.length-4} more</span>`:''}</div>`; });
+  const tail=(cols-((offset+ml)%cols))%cols; for(let i=0;i<tail;i++) html+='<div class="mv-cell pad"></div>';
+  html+='</div>';
+  mv.innerHTML=html;
+}
+mv.addEventListener('click',ev=>{ const b=ev.target.closest('[data-id]'); if(!b) return; const id=b.dataset.id; select(id,false); showPop(id,ev.clientX,ev.clientY); });
+mv.addEventListener('dblclick',ev=>{
+  const b=ev.target.closest('[data-id]'); hidePop();
+  if(b){ openEventEditor(byId(W(),b.dataset.id)); return; }
+  const c=ev.target.closest('[data-day]'); if(c) openEventEditor(null,{start:fromDay(W().calendar,+c.dataset.day)});
+});
+
+/* ---------- header & mode ---------- */
+function renderHeader(){
+  $('#world-select').innerHTML=S.worlds.map(w=>`<option value="${w.id}"${w.id===S.activeId?' selected':''}>${esc(w.name)}</option>`).join('')+`<option value="__new">+ New world…</option>`;
+  const w=W();
+  $('#now-text').textContent = w.now ? fmtDate(w.calendar,w.now) : 'Not set';
+  $('#now-kicker').textContent = `Now · Session ${w.session}`;
+  $('#now-prev').disabled=!w.now; $('#now-next').disabled=!w.now;
+  $('#btn-undo').disabled=!undoStack.length;
+  $('#storage-warn').hidden=storageOK;
+  $('#btn-player').setAttribute('aria-pressed',String(!!S.playerView));
+  $('#player-banner').hidden=!S.playerView;
+  const month=S.mode==='month';
+  $('#mode-tl').setAttribute('aria-pressed',String(!month)); $('#mode-mv').setAttribute('aria-pressed',String(month));
+  $('#tl').hidden=month; $('#mv').hidden=!month; $('#tl-controls').hidden=month; $('#mv-controls').hidden=!month;
+  $('#hint').textContent = month ? 'Click an event for its description · double-click a day to add one there' : 'Click the axis to add · drag events to move them · drag period ends to resize · double-click to edit';
+}
+function setMode(mode){ if(S.mode===mode) return; S.mode=mode; recenterAxis=true; hidePop(); if(mode==='month') ui$.month=null; saveSoon(); renderAll(); }
+$('#mode-seg').addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); if(b) setMode(b.dataset.mode); });
+$('#world-select').addEventListener('change',e=>{
+  if(e.target.value==='__new'){ e.target.value=S.activeId; openNewWorldModal(); return; }
+  S.activeId=e.target.value; recenterAxis=true; ui$.selected=null; ui$.focusChar=null; ui$.month=null; ui$.loc=''; ui$.ses=''; saveSoon(); renderAll();
+});
+function stepNow(n){ const w=W(); if(!w.now) return; commit(()=>{ w.now=fromDay(w.calendar,toDay(w.calendar,w.now)+n); }); }
+function togglePlayer(){ S.playerView=!S.playerView; const e=ui$.selected&&byId(W(),ui$.selected); if(e&&e.secret&&S.playerView) ui$.selected=null; hidePop(); saveSoon(); renderAll(); toast(S.playerView?'Player view: secrets hidden':'DM view: everything visible'); }
+
+/* ---------- list & filters ---------- */
+function renderFilters(){
+  const w=W();
+  const locs=[...new Set(w.events.filter(e=>visibleEv(w,e)).map(e=>e.location.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const sess=[...new Set(w.events.filter(e=>visibleEv(w,e)).map(e=>e.session.trim()).filter(Boolean))].sort((a,b)=>(+a-+b)||a.localeCompare(b));
+  if(ui$.loc && !locs.includes(ui$.loc)) ui$.loc='';
+  if(ui$.ses && !sess.includes(ui$.ses)) ui$.ses='';
+  const hasUncat=w.events.some(e=>!catOf(w,e.cat)), hiddenN=w.categories.filter(c=>c.hidden).length+(hasUncat&&w.hideUncat?1:0), solo=(w.hideUncat||!hasUncat) && w.categories.filter(c=>!c.hidden).length===1 ? w.categories.find(c=>!c.hidden) : null;
+  $('#filters').innerHTML=
+    `<select id="f-only" aria-label="Show only one category"><option value="">Show only…</option>${w.categories.map(c=>`<option value="${c.id}"${solo&&solo.id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')}</select>`+
+    (hiddenN?`<button class="chip" id="chip-all" title="Show every category again">Show all</button>`:'')+
+    w.categories.map(c=>`<button class="chip" data-cat="${c.id}" aria-pressed="${!c.hidden}" title="Click to show or hide · double-click to show only this">${'<i style="background:'+c.color+'"></i>'}${esc(c.name)}</button>`).join('')+
+    (hasUncat?`<button class="chip" data-cat="__none" aria-pressed="${!w.hideUncat}" title="Events without a category"><i style="background:var(--muted)"></i>No category</button>`:'')+
+    `<button class="chip manage" id="chip-manage">Edit categories</button>`+
+    (locs.length?`<select id="f-loc" aria-label="Filter by location"><option value="">All locations</option>${locs.map(l=>`<option value="${esc(l)}"${l===ui$.loc?' selected':''}>${esc(l)}</option>`).join('')}</select>`:'')+
+    (sess.length?`<select id="f-ses" aria-label="Filter by session"><option value="">All sessions</option>${sess.map(s=>`<option value="${esc(s)}"${s===ui$.ses?' selected':''}>Session ${esc(s)}</option>`).join('')}</select>`:'');
+}
+$('#filters').addEventListener('click',e=>{
+  if(e.target.closest('#chip-manage')){ openCategories(); return; }
+  if(e.target.closest('#chip-all')){ showOnlyCat(null); return; }
+  const b=e.target.closest('[data-cat]'); if(!b) return;
+  /* a second click within a moment means "show only this one" */
+  const id=b.dataset.cat;
+  if(chipTimer && chipTimer.id===id){ clearTimeout(chipTimer.t); chipTimer=null; if(id!=='__none') showOnlyCat(id); return; }
+  if(chipTimer) clearTimeout(chipTimer.t);
+  chipTimer={id,t:setTimeout(()=>{ chipTimer=null; const w=W(); if(id==='__none') w.hideUncat=!w.hideUncat; else { const c=catOf(w,id); c.hidden=!c.hidden; } saveSoon(); renderAll(); },230)};
+});
+/* show a single category (or all of them when id is null) on the timeline, month view and list */
+function showOnlyCat(id){ const w=W(); w.categories.forEach(c=>{ c.hidden = id ? c.id!==id : false; }); w.hideUncat=!!id; hidePop(); saveSoon(); renderAll();
+  if(id) toast('Showing only '+catOf(w,id).name+'. Use “Show all” to bring the rest back'); }
+let chipTimer=null;
+$('#filters').addEventListener('change',e=>{ if(e.target.id==='f-only'){ showOnlyCat(e.target.value||null); return; } if(e.target.id==='f-loc') ui$.loc=e.target.value; if(e.target.id==='f-ses') ui$.ses=e.target.value; renderList(); });
+function filteredSorted(){
+  const w=W(), q=ui$.query.trim();
+  return w.events.filter(e=>visibleEv(w,e) && (ui$.kind==='all'||e.kind===ui$.kind) && matches(w,e,q)
+      && (!ui$.loc || e.location.trim()===ui$.loc) && (!ui$.ses || e.session.trim()===ui$.ses))
+    .sort((a,b)=>evStart(w,a)-evStart(w,b) || a.title.localeCompare(b.title));
+}
+function renderList(){
+  const w=W(), list=filteredSorted();
+  $('#list-count').textContent = `${list.length} of ${w.events.filter(e=>visibleEv(w,e)).length}`;
+  if(!list.length){ $('#list').innerHTML=`<div class="list-empty">${w.events.length?'No events match the search or filters.':'No events yet. Add one with “Add event”.'}</div>`; return; }
+  $('#list').innerHTML=list.map(e=>{ const c=evColor(w,e), cat=catOf(w,e.cat);
+    const badges=(e.secret?'<span class="badge secret">Secret</span>':'')+(e.session?`<span class="badge ses">S${esc(e.session)}</span>`:'');
+    return `<div class="ev-line"><button class="ev-row" data-id="${e.id}" aria-current="${ui$.selected===e.id}"><span class="ev-ico ${e.kind}" style="background:${c};color:${textOn(c)}">${icon(e.icon)}</span><span class="ev-main"><span class="ev-title">${esc(e.title)}</span><span class="ev-date">${esc(fmtEvDate(w,e))}${e.location?' · '+esc(e.location):''}</span></span><span class="ev-side"><span class="ev-cat">${esc(cat?cat.name:'')}</span>${badges?`<span style="display:flex;gap:4px">${badges}</span>`:''}</span></button><button class="icon-btn sm ev-edit" data-edit="${e.id}" aria-label="Edit ${esc(e.title)}" title="Edit">${ui('edit')}</button></div>`; }).join('');
+}
+$('#list').addEventListener('click',e=>{ const ed=e.target.closest('[data-edit]'); if(ed){ openEventEditor(byId(W(),ed.dataset.edit)); return; } const b=e.target.closest('[data-id]'); if(b) select(b.dataset.id,true); });
+$('#list').addEventListener('dblclick',e=>{ const b=e.target.closest('[data-id]'); if(b) openEventEditor(byId(W(),b.dataset.id)); });
+$('#search').addEventListener('input',e=>{ ui$.query=e.target.value; renderList(); schedule(); });
+$('#kind-filter').addEventListener('click',e=>{ const b=e.target.closest('[data-k]'); if(!b) return; ui$.kind=b.dataset.k; $$('#kind-filter button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderList(); });
+
+function select(id,center){
+  ui$.selected=id;
+  const e=id && byId(W(),id);
+  if(e && center) centerOn(e);
+  renderList(); renderDetail(); schedule();
+  if(id){ const row=$(`#list [data-id="${id}"]`); row && row.scrollIntoView({block:'nearest'}); }
+}
+
+/* ---------- detail ---------- */
+function linkChip(w,x,note){ const c=evColor(w,x); return `<button class="link-chip" data-goto="${x.id}"><i style="background:${c}"></i>${esc(x.title)}${note?` <small>${esc(note)}</small>`:''}</button>`; }
+function ageNote(w,life,dt,dp){
+  if(!life || life.kind!=='life') return '';
+  const a=ageAt(life.start,life.prec,dt), approx=life.approx||life.prec!=='day'||dp!=='day';
+  if(a<0) return 'not yet born';
+  if(life.end && unitStart(w.calendar,dt,dp)>=unitEnd(w.calendar,life.end,life.prec)) return 'deceased';
+  return (approx?'c. ':'')+'age '+a;
+}
+function renderDetail(){
+  const w=W(), cal=w.calendar, box=$('#detail');
+  const e=ui$.selected && byId(w,ui$.selected);
+  if(!e || !visibleEv(w,e)){
+    const evs=w.events.filter(x=>visibleEv(w,x)), n=evs.length; let span='nothing yet';
+    if(n){ const lo=Math.min(...evs.map(x=>evStart(w,x))), hi=Math.max(...evs.map(x=>evEnd(w,x))); span=fmtSpan(cal,hi-lo); }
+    box.innerHTML=`<div class="welcome"><h3>${esc(w.name)}</h3>
+      <div class="stats"><div><b>${evs.filter(x=>x.kind==='moment').length}</b><span>moments</span></div><div><b>${evs.filter(x=>x.kind==='period').length}</b><span>periods</span></div><div><b>${evs.filter(x=>x.kind==='life').length}</b><span>characters</span></div><div><b>${calBase(cal)}</b><span>days a year</span></div></div>
+      <p>The chronicle spans ${esc(span)}. Select an event on the timeline, the month grid or the list to read it here.</p>
+      <p>Shortcuts: <kbd>N</kbd> new event, <kbd>M</kbd> timeline / month, <kbd>P</kbd> player view, <kbd>F</kbd> fit all, <kbd>.</kbd> jump to now, <kbd>+</kbd>/<kbd>−</kbd> zoom, <kbd>←</kbd>/<kbd>→</kbd> pan, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</p></div>`;
+    return;
+  }
+  const c=evColor(w,e), cat=catOf(w,e.cat), s=evStart(w,e), en=evEnd(w,e);
+  const wd=e.prec==='day', circa=e.approx||e.prec!=='day'?'c. ':'';
+  const facts=[];
+  const F=(k,v,plain)=>facts.push(`<dt>${k}</dt><dd${plain?' class="plain"':''}>${v}</dd>`);
+  if(e.kind==='life'){
+    F('Born',esc(fmtP(cal,e.start,e.prec,e.approx,wd)));
+    if(e.end){ F('Died',esc(fmtP(cal,e.end,e.prec,e.approx,wd))); F('Age at death',esc(circa+ageAt(e.start,e.prec,e.end))); }
+    else if(w.now){ const a=ageAt(e.start,e.prec,w.now); F('Age now',esc(a<0?'not yet born':circa+a)); }
+  } else if(hasEnd(e)){
+    F('From',esc(fmtP(cal,e.start,e.prec,e.approx,wd))); F('Until',esc(fmtP(cal,e.end,e.prec,e.approx,wd))); F('Lasted',esc(circa+fmtSpan(cal,en-s)));
+  } else {
+    F('Date',esc(fmtP(cal,e.start,e.prec,e.approx,wd)));
+    if(e.repeat) F('Repeats',esc(repeatLabel(e)));
+  }
+  if(w.now && e.kind!=='life' && !e.repeat){ const n=toDay(cal,w.now);
+    let rel; if(n>=s && n<en) rel=e.kind==='moment'?(e.prec==='day'?'Today':'Around now'):'Ongoing now';
+    else if(n<s) rel=`${circa}${fmtSpan(cal,s-n)} from now`;
+    else rel=`${circa}${fmtSpan(cal,n-(en-1))} ago`;
+    F('Relative',esc(rel)); }
+  if(e.location) F('Location',esc(e.location),true);
+  if(e.session) F('Session',esc(e.session),true);
+  const who=involved(w,e);
+  if(who.length) F('Involved',`<span class="chips-inline">${who.map(x=>linkChip(w,x,ageNote(w,x,e.start,e.prec))).join('')}</span>`,true);
+  const cs=causes(w,e), ef=effects(w,e);
+  if(cs.length) F('Caused by',`<span class="chips-inline">${cs.map(x=>linkChip(w,x)).join('')}</span>`,true);
+  if(ef.length) F('Led to',`<span class="chips-inline">${ef.map(x=>linkChip(w,x)).join('')}</span>`,true);
+  if(e.kind==='life'){
+    if(e.phases.length) F('Phases',`<span class="chips-inline">${[...e.phases].sort((a,b)=>toDay(cal,a.start)-toDay(cal,b.start)).map(ph=>`<span class="link-chip" style="cursor:default"><i style="background:${ph.color}"></i>${esc(ph.label)} <small>from ${esc(fmtDate(cal,ph.start))}</small></span>`).join('')}</span>`,true);
+    const apps=w.events.filter(x=>x.who.includes(e.id) && visibleEv(w,x)).sort((a,b)=>evStart(w,a)-evStart(w,b));
+    if(apps.length) F('On stage',esc(`${fmtP(cal,apps[0].start,apps[0].prec,apps[0].approx)} → ${fmtEvDate(w,apps[apps.length-1]).split(' → ').pop()}`));
+    if(apps.length) F('Appears in',`<span class="chips-inline">${apps.map(x=>linkChip(w,x,ageNote(w,e,x.start,x.prec))).join('')}</span>`,true);
+  }
+  if(e.tags.length) F('Tags',`<span class="tags">${e.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</span>`,true);
+  if(/^https?:\/\//i.test(e.link)) F('Link',`<a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.link)}</a>`,true);
+  const kindName={moment:'Moment',period:'Period',life:'Character'}[e.kind];
+  box.innerHTML=`
+    <div class="kicker" style="color:${c}"><span>${kindName}${cat?' · '+esc(cat.name):''}</span>${e.secret?'<span class="badge secret">Secret</span>':''}</div>
+    <h3><span class="ev-ico ${e.kind}" style="background:${c};color:${textOn(c)}">${icon(e.icon)}</span>${esc(e.title)}</h3>
+    <dl class="facts">${facts.join('')}</dl>
+    <div class="md${e.desc?'':' empty'}">${e.desc?md(e.desc):'No description yet. Press Edit to add one.'}</div>
+    ${!S.playerView && e.dmNotes?`<div class="dm-notes"><span class="lbl">DM notes · hidden in player view</span><div class="md">${md(e.dmNotes)}</div></div>`:''}
+    <div class="detail-actions">
+      <button class="btn primary" data-act="edit">${ui('edit')}Edit</button>
+      <button class="btn" data-act="dup">${ui('copy')}Duplicate</button>
+      <button class="btn" data-act="now">${ui('now')}Set as now</button>
+      <button class="btn" data-act="focus">${ui('fit')}Show</button>
+      <button class="btn danger" data-act="del">${ui('trash')}Delete</button>
+    </div>`;
+}
+$('#detail').addEventListener('click',ev=>{
+  const g=ev.target.closest('[data-goto]'); if(g){ select(g.dataset.goto,true); return; }
+  const b=ev.target.closest('[data-act]'); if(!b) return;
+  const w=W(), e=byId(w,ui$.selected); if(!e) return;
+  const a=b.dataset.act;
+  if(a==='edit') openEventEditor(e);
+  else if(a==='dup'){ const c=JSON.parse(JSON.stringify(e)); c.id=uid(); c.title=e.title+' (copy)'; commit(()=>w.events.push(c)); select(c.id,false); }
+  else if(a==='now'){ commit(()=>{ w.now=fromDay(w.calendar,evStart(w,e)); }); toast('Current date set'); }
+  else if(a==='focus'){ centerOn(e); schedule(); }
+  else if(a==='del') armDelete(b,()=>{ commit(()=>deleteEvent(w,e.id)); toast('Event deleted. Undo with Ctrl+Z'); });
+});
+function armDelete(btn,fn){
+  if(btn.classList.contains('armed')){ fn(); return; }
+  const old=btn.innerHTML; btn.classList.add('armed'); btn.textContent='Click again to confirm';
+  setTimeout(()=>{ if(btn.isConnected){ btn.classList.remove('armed'); btn.innerHTML=old; } },3000);
+}
+
+/* ---------- modals ---------- */
+let overlay=null;
+function openModal(title,html,wide){
+  closeModal(); hidePop();
+  overlay=document.createElement('div'); overlay.className='overlay';
+  overlay.innerHTML=`<div class="modal${wide?' wide':''}" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title">${esc(title)}</h2><button class="icon-btn sm" data-close aria-label="Close">${ui('x')}</button></div><div class="modal-body">${html}</div></div>`;
+  overlay.addEventListener('mousedown',e=>{ if(e.target===overlay) closeModal(); });
+  overlay.querySelector('[data-close]').addEventListener('click',closeModal);
+  document.body.appendChild(overlay);
+  const f=overlay.querySelector('.modal-body input:not([type=checkbox]):not([type=color]):not([type=file]),.modal-body textarea,.modal-body select'); if(f) f.focus();
+  return overlay;
+}
+function closeModal(){ if(overlay){ overlay.remove(); overlay=null; } }
+
+function dateFieldsHTML(id,dt){
+  const cal=W().calendar; dt=norm(cal,dt);
+  const e=eraOf(cal,dt.y), eras=sortedEras(cal);
+  const months=cal.months.map((m,i)=>`<option value="${i}"${i===dt.m?' selected':''}>${esc(m.name)}${m.ic?' ✦':''}</option>`).join('');
+  let era='';
+  if(eras.length){
+    const opts=(hasPre(cal)?`<option value="pre"${e.idx==='pre'?' selected':''}>${esc(cal.preEra.abbr||cal.preEra.name)}</option>`:'')+eras.map((x,i)=>`<option value="${i}"${e.idx===i?' selected':''}>${esc(x.abbr||x.name)}</option>`).join('');
+    era=`<select class="inp" id="${id}-e" aria-label="Era">${opts}</select>`;
+  }
+  return `<div class="datef${era?'':' noera'}"><input class="inp" type="number" id="${id}-d" value="${dt.d}" min="1" aria-label="Day"><select class="inp" id="${id}-m" aria-label="Month">${months}</select><input class="inp" type="number" id="${id}-y" value="${e.ey}" aria-label="Year">${era}</div>`;
+}
+function readDate(id){
+  const cal=W().calendar, eras=sortedEras(cal);
+  const d=parseInt($('#'+id+'-d').value,10)||1, m=parseInt($('#'+id+'-m').value,10)||0;
+  let ey=parseInt($('#'+id+'-y').value,10); if(!isFinite(ey)) ey=1;
+  let y=ey; const es=$('#'+id+'-e');
+  if(es){ if(es.value==='pre') y=eras[0].start-ey; else y=eras[+es.value].start+ey-1; }
+  return {y,m,d};
+}
+function pickList(id,items,sel){
+  if(!items.length) return '';
+  return `<div class="pick" id="${id}">${items.length>8?`<input class="inp pick-filter" type="text" placeholder="Filter…" aria-label="Filter list">`:''}<div class="pick-box">${items.map(it=>`<label class="check" data-txt="${esc(it.label.toLowerCase())}"><input type="checkbox" value="${it.id}"${sel.includes(it.id)?' checked':''}><span>${esc(it.label)}</span></label>`).join('')}</div></div>`;
+}
+const pickVals=(root,id)=>$$(`#${id} input[type=checkbox]:checked`,root).map(x=>x.value);
+
+/* event editor */
+function openEventEditor(ev,preset){
+  const w=W(), cal=w.calendar, isNew=!ev;
+  ensureView();
+  const center=fromDay(cal,w.view.start+(stageWidth()/2)/w.view.ppd);
+  const pre=preset||{};
+  const e = ev ? JSON.parse(JSON.stringify(ev)) : blankEvent({start:pre.start||(w.now?{...w.now}:center),end:pre.end||null,kind:pre.kind||'moment',prec:pre.prec||'day',approx:!!pre.approx,cat:(w.categories[0]||{}).id||'',session:String(w.session||'')});
+  const hadEnd=!!e.end;
+  if(!e.end) e.end=fromDay(cal,toDay(cal,e.start)+Math.round(avgYear(cal)));
+  const catOpts=`<option value="">No category</option>`+w.categories.map(c=>`<option value="${c.id}"${c.id===e.cat?' selected':''}>${esc(c.name)}</option>`).join('');
+  const chars=w.events.filter(x=>x.kind==='life' && x.id!==e.id).sort((a,b)=>a.title.localeCompare(b.title)).map(x=>({id:x.id,label:x.title}));
+  const others=w.events.filter(x=>x.id!==e.id).sort((a,b)=>evStart(w,a)-evStart(w,b)).map(x=>({id:x.id,label:`${x.title} · ${fmtP(cal,x.start,x.prec,x.approx)}`}));
+  const locs=[...new Set(w.events.map(x=>x.location.trim()).filter(Boolean))];
+  const rep=e.repeat||{unit:'',every:1};
+  const ov=openModal(isNew?'New event':'Edit event',`
+    <div class="field"><label for="ev-title">Title</label><input type="text" id="ev-title" value="${esc(e.title)}" placeholder="e.g. The Siege of Thundermount"></div>
+    <div class="field"><span class="lbl">Type</span><div class="seg" id="ev-kind" role="group"><button type="button" data-k="moment" aria-pressed="${e.kind==='moment'}">Moment</button><button type="button" data-k="period" aria-pressed="${e.kind==='period'}">Period</button><button type="button" data-k="life" aria-pressed="${e.kind==='life'}">Character</button></div></div>
+    <div class="row">
+      <div class="field"><label for="ev-prec">How precise is the date?</label><select id="ev-prec"><option value="day"${e.prec==='day'?' selected':''}>Exact day</option><option value="month"${e.prec==='month'?' selected':''}>Month only</option><option value="year"${e.prec==='year'?' selected':''}>Year only</option></select></div>
+      <label class="check" style="flex:1 1 160px;padding-bottom:8px"><input type="checkbox" id="ev-approx"${e.approx?' checked':''}>Approximate (shown as “c.”)</label>
+    </div>
+    <div class="field"><span class="lbl" id="ev-start-l"></span>${dateFieldsHTML('ev-s',e.start)}</div>
+    <div class="field" id="ev-end-f"><span class="lbl" id="ev-end-l"></span><label class="check" id="ev-alive-w"><input type="checkbox" id="ev-alive"${e.kind==='life'&&!hadEnd?' checked':''}>Still alive</label><div id="ev-end-dates">${dateFieldsHTML('ev-e',e.end)}</div></div>
+    <div class="field" id="ev-ph-f"><span class="lbl">Life phases</span><div id="ev-phases" style="display:flex;flex-direction:column;gap:6px"></div><div class="row"><button type="button" class="btn" id="ev-ph-add">${ui('plus')}Add phase</button></div><p class="help">A phase runs from its date until the next phase or the end of the line, e.g. “Feywild” then “Stranded in the Drift”.</p></div>
+    <div class="row" id="ev-rep-row">
+      <div class="field"><label for="ev-rep">Repeats</label><select id="ev-rep"><option value=""${!rep.unit?' selected':''}>Doesn't repeat</option><option value="year"${rep.unit==='year'?' selected':''}>Every N years</option><option value="day"${rep.unit==='day'?' selected':''}>Every N days</option></select></div>
+      <div class="field" style="flex:0 1 120px"><label for="ev-rep-n">N</label><input type="number" id="ev-rep-n" min="1" value="${rep.every||1}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="ev-cat">Category</label><select id="ev-cat">${catOpts}</select></div>
+      <div class="field"><span class="lbl">Colour</span><div class="color-row"><input type="color" id="ev-color" value="${e.color||evColor(w,e)}" aria-label="Event colour"><label class="check"><input type="checkbox" id="ev-usecat"${e.color?'':' checked'}>Use category colour</label></div></div>
+    </div>
+    <label class="check" id="ev-line-w"><input type="checkbox" id="ev-line"${e.line?' checked':''}><span id="ev-line-l"></span></label>
+    <div class="field"><span class="lbl">Icon</span><div class="icon-grid" id="ev-icons">${Object.keys(ICONS).map(k=>`<button type="button" data-icon="${k}" aria-pressed="${k===e.icon}" title="${k}" aria-label="${k}">${icon(k)}</button>`).join('')}</div></div>
+    <div class="field"><label for="ev-desc">Description</label><textarea id="ev-desc" placeholder="What happened, who was there, consequences… Supports **bold**, *italic*, - lists and [links](https://…)">${esc(e.desc)}</textarea></div>
+    <div class="field"><label for="ev-dm">DM notes (hidden in player view)</label><textarea id="ev-dm" placeholder="Secrets, hooks, what the players don't know yet" style="min-height:70px">${esc(e.dmNotes)}</textarea></div>
+    <label class="check"><input type="checkbox" id="ev-secret"${e.secret?' checked':''}>Secret event: hide it completely in player view</label>
+    <div class="row">
+      <div class="field"><label for="ev-loc">Location</label><input type="text" id="ev-loc" list="ev-loc-list" value="${esc(e.location)}" placeholder="e.g. Wyldermoore"><datalist id="ev-loc-list">${locs.map(l=>`<option value="${esc(l)}">`).join('')}</datalist></div>
+      <div class="field" style="flex:0 1 130px"><label for="ev-ses">Session</label><input type="text" id="ev-ses" value="${esc(e.session)}" placeholder="e.g. 14"></div>
+    </div>
+    ${chars.length?`<div class="field" id="ev-who-f"><span class="lbl">Characters involved</span>${pickList('ev-who',chars,e.who)}</div>`:''}
+    ${others.length?`<div class="field"><span class="lbl">Led to (consequences)</span>${pickList('ev-led',others,e.ledTo)}</div>`:''}
+    <div class="row">
+      <div class="field"><label for="ev-tags">Tags</label><input type="text" id="ev-tags" value="${esc(e.tags.join(', '))}" placeholder="comma, separated"></div>
+      <div class="field"><label for="ev-link">Link</label><input type="url" id="ev-link" value="${esc(e.link)}" placeholder="https://notion.so/…"></div>
+    </div>
+    <p class="err" id="ev-err" hidden></p>
+    <div class="modal-foot">${isNew?'':`<button class="btn danger left" id="ev-del">${ui('trash')}Delete</button>`}<button class="btn" data-close2>Cancel</button><button class="btn primary" id="ev-save">${isNew?'Add event':'Save changes'}</button></div>`);
+  let kind=e.kind, ic=e.icon;
+  let phs=(e.phases||[]).map(x=>({...x}));
+  const PH_COLORS=['#c2611f','#5b6bd6','#2f9a2a','#b0142f','#7b3fa0','#0f766e'];
+  const syncPh=()=>{ $$('#ev-phases .ph-row',ov).forEach((r,i)=>{ phs[i].label=$('[data-f=label]',r).value; phs[i].color=$('[data-f=color]',r).value; phs[i].start=norm(cal,readDate('ph'+i)); }); };
+  const paintPh=()=>{ $('#ev-phases',ov).innerHTML=phs.length?phs.map((ph,i)=>`<div class="ph-row"><input class="inp" data-f="label" value="${esc(ph.label)}" placeholder="Phase name" aria-label="Phase name">${dateFieldsHTML('ph'+i,ph.start)}<input type="color" data-f="color" value="${ph.color}" aria-label="Phase colour"><button type="button" class="icon-btn sm" data-phdel="${i}" aria-label="Remove phase">${ui('x')}</button></div>`).join(''):'<p class="help">No phases yet.</p>'; };
+  const refresh=()=>{
+    const p=$('#ev-prec',ov).value, alive=$('#ev-alive',ov).checked;
+    $('#ev-start-l',ov).textContent={moment:'Date',period:'Starts',life:'Born'}[kind];
+    $('#ev-end-l',ov).textContent=kind==='life'?'Died':'Ends (inclusive)';
+    $('#ev-end-f',ov).hidden=kind==='moment';
+    $('#ev-alive-w',ov).hidden=kind!=='life';
+    $('#ev-end-dates',ov).hidden=kind==='life'&&alive;
+    $('#ev-rep-row',ov).hidden=kind!=='moment';
+    $('#ev-rep-n',ov).disabled=!$('#ev-rep',ov).value;
+    $('#ev-line-w',ov).hidden=kind==='life';
+    $('#ev-line-l',ov).textContent=kind==='period'?'Shade this period across the whole timeline':'Draw a milestone line across the whole timeline';
+    const whoF=$('#ev-who-f',ov); if(whoF) whoF.hidden=kind==='life';
+    $('#ev-ph-f',ov).hidden=kind!=='life';
+    ['ev-s','ev-e'].forEach(id=>{ $('#'+id+'-d',ov).disabled=p!=='day'; $('#'+id+'-m',ov).disabled=p==='year'; });
+  };
+  paintPh(); refresh();
+  ov.addEventListener('change',refresh);
+  $('#ev-ph-add',ov).addEventListener('click',()=>{ syncPh(); const last=phs.length?phs[phs.length-1].start:readDate('ev-s'); phs.push({id:uid(),label:'',start:norm(cal,last),color:PH_COLORS[phs.length%PH_COLORS.length]}); paintPh(); const ins=$$('#ev-phases [data-f=label]',ov); ins[ins.length-1].focus(); });
+  $('#ev-phases',ov).addEventListener('click',x=>{ const b=x.target.closest('[data-phdel]'); if(!b) return; syncPh(); phs.splice(+b.dataset.phdel,1); paintPh(); });
+  ov.querySelector('#ev-kind').addEventListener('click',x=>{ const b=x.target.closest('[data-k]'); if(!b) return; const was=kind; kind=b.dataset.k;
+    $$('#ev-kind button',ov).forEach(y=>y.setAttribute('aria-pressed',String(y===b)));
+    if(kind==='life' && was!=='life' && ic==='star'){ ic='person'; $$('#ev-icons button',ov).forEach(y=>y.setAttribute('aria-pressed',String(y.dataset.icon==='person'))); }
+    refresh(); });
+  ov.querySelector('#ev-icons').addEventListener('click',x=>{ const b=x.target.closest('[data-icon]'); if(!b) return; ic=b.dataset.icon; $$('#ev-icons button',ov).forEach(y=>y.setAttribute('aria-pressed',String(y===b))); });
+  ov.addEventListener('input',x=>{ if(x.target.classList.contains('pick-filter')){ const q=x.target.value.toLowerCase(); $$('label',x.target.parentNode).forEach(l=>l.hidden=!l.dataset.txt.includes(q)); } });
+  $('#ev-color',ov).addEventListener('input',()=>{ $('#ev-usecat',ov).checked=false; });
+  $('#ev-cat',ov).addEventListener('change',x=>{ if($('#ev-usecat',ov).checked){ const c=catOf(w,x.target.value); if(c) $('#ev-color',ov).value=c.color; } });
+  ov.querySelector('[data-close2]').addEventListener('click',closeModal);
+  if(!isNew) $('#ev-del',ov).addEventListener('click',x=>armDelete(x.currentTarget,()=>{ closeModal(); commit(()=>deleteEvent(w,e.id)); toast('Event deleted. Undo with Ctrl+Z'); }));
+  const save=()=>{
+    const err=$('#ev-err',ov), fail=msg=>{ err.hidden=false; err.textContent=msg; err.scrollIntoView({block:'nearest'}); };
+    const title=$('#ev-title',ov).value.trim();
+    if(!title){ fail('Give the event a title.'); $('#ev-title',ov).focus(); return; }
+    if(kind==='life') syncPh();
+    const p=$('#ev-prec',ov).value;
+    const trim=dt=>{ dt=norm(cal,dt); if(p==='year') return {y:dt.y,m:0,d:1}; if(p==='month') return {y:dt.y,m:dt.m,d:1}; return dt; };
+    const s=trim(readDate('ev-s')); let en=null;
+    if(kind==='period' || (kind==='life' && !$('#ev-alive',ov).checked)){
+      en=trim(readDate('ev-e'));
+      if(unitStart(cal,en,p)<unitStart(cal,s,p)) return fail(kind==='life'?'The death date is before the birth date.':'The end date is before the start date. Swap them or pick a later end.');
+    }
+    const link=$('#ev-link',ov).value.trim();
+    if(link && !/^https?:\/\//i.test(link)) return fail('Links need to start with http:// or https://');
+    const ru=$('#ev-rep',ov).value, rn=parseInt($('#ev-rep-n',ov).value,10);
+    if(kind==='moment' && ru && !(rn>=1)) return fail('“Repeats every N” needs N of 1 or more.');
+    const out=Object.assign(blankEvent({}),{id:e.id,title,kind,start:s,end:en,prec:p,approx:$('#ev-approx',ov).checked,cat:$('#ev-cat',ov).value,icon:ic,
+      color:$('#ev-usecat',ov).checked?'':$('#ev-color',ov).value,line:kind!=='life'&&$('#ev-line',ov).checked,
+      tags:$('#ev-tags',ov).value.split(',').map(t=>t.trim()).filter(Boolean),link,desc:$('#ev-desc',ov).value,dmNotes:$('#ev-dm',ov).value,
+      secret:$('#ev-secret',ov).checked,location:$('#ev-loc',ov).value.trim(),session:$('#ev-ses',ov).value.trim(),
+      who:kind==='life'?[]:pickVals(ov,'ev-who'),ledTo:pickVals(ov,'ev-led'),repeat:kind==='moment'&&ru?{unit:ru,every:rn}:null,
+      phases:kind==='life'?phs.filter(x=>x.label.trim()).map(x=>({...x,label:x.label.trim()})).sort((a,b)=>toDay(cal,a.start)-toDay(cal,b.start)):[]});
+    closeModal();
+    commit(()=>{ const i=w.events.findIndex(x=>x.id===out.id); if(i>=0) w.events[i]=out; else w.events.push(out); });
+    if(S.playerView && out.secret) toast('Saved. It is secret, so player view hides it.');
+    else { select(out.id,isNew); toast(isNew?'Event added':'Saved'); }
+  };
+  $('#ev-save',ov).addEventListener('click',save);
+  $('#ev-title',ov).addEventListener('keydown',x=>{ if(x.key==='Enter') save(); });
+}
+
+/* current date & sessions */
+function openNowModal(){
+  const w=W(), cal=w.calendar; ensureView();
+  const dt=w.now || fromDay(cal,w.view.start+(stageWidth()/2)/w.view.ppd);
+  const ov=openModal('Current date & sessions',`
+    <p class="help">The “Now” line marks where the story currently stands. Step it a day at a time with the arrows in the header.</p>
+    <div class="field"><span class="lbl">Current date</span>${dateFieldsHTML('nw',dt)}</div>
+    <div class="row">
+      <div class="field" style="flex:0 1 160px"><label for="nw-ses">Current session</label><input type="number" id="nw-ses" min="1" value="${w.session}"></div>
+      <p class="help" style="flex:1 1 220px;padding-bottom:8px">New events are tagged with this session. “End session” records where the story stood and moves on to the next one.</p>
+    </div>
+    ${w.sessionLog.length?`<fieldset><legend>Session log</legend><div class="tbl-wrap"><table class="ed"><thead><tr><th>Session</th><th>Story date at the end</th><th>Played on</th><th></th></tr></thead><tbody>${[...w.sessionLog].reverse().map(s=>`<tr><td>S${esc(s.n)}</td><td style="font-family:var(--f-mono);font-size:12.5px">${s.now?esc(fmtDate(cal,s.now)):'–'}</td><td style="font-family:var(--f-mono);font-size:12.5px">${esc(s.at||'')}</td><td class="act"><button class="icon-btn sm" data-slog="${esc(s.id)}" aria-label="Remove log entry">${ui('x')}</button></td></tr>`).join('')}</tbody></table></div></fieldset>`:''}
+    <div class="modal-foot"><button class="btn left" id="nw-clear">Clear date</button><button class="btn" id="nw-end">End session ${w.session} here</button><button class="btn" data-close2>Cancel</button><button class="btn primary" id="nw-save">Save</button></div>`);
+  ov.querySelector('[data-close2]').addEventListener('click',closeModal);
+  const ses=()=>Math.max(1,parseInt($('#nw-ses',ov).value,10)||1);
+  $('#nw-clear',ov).addEventListener('click',()=>{ closeModal(); commit(()=>{ w.now=null; }); });
+  $('#nw-save',ov).addEventListener('click',()=>{ const d=norm(cal,readDate('nw')), s=ses(); closeModal(); commit(()=>{ w.now=d; w.session=s; }); });
+  $('#nw-end',ov).addEventListener('click',()=>{ const d=norm(cal,readDate('nw')), s=ses(); closeModal();
+    commit(()=>{ w.now=d; w.sessionLog.push({id:uid(),n:s,now:d,at:new Date().toISOString().slice(0,10)}); w.session=s+1; });
+    toast(`Session ${s} logged. Now on session ${s+1}`); });
+  ov.addEventListener('click',x=>{ const b=x.target.closest('[data-slog]'); if(!b) return; const id=b.dataset.slog; closeModal(); commit(()=>{ w.sessionLog=w.sessionLog.filter(s=>s.id!==id); }); openNowModal(); });
+}
+
+/* new world */
+function openNewWorldModal(){
+  const ov=openModal('New world',`
+    <p class="help">Each world has its own calendar, categories, events and sessions.</p>
+    <div class="field"><label for="nw-name">Name</label><input type="text" id="nw-name" placeholder="e.g. Scarred Lands"></div>
+    <div class="field"><label for="nw-preset">Start from</label><select id="nw-preset">${PRESETS.map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join('')}</select></div>
+    <div class="modal-foot"><button class="btn" data-close2>Cancel</button><button class="btn primary" id="nw-create">Create world</button></div>`);
+  ov.querySelector('[data-close2]').addEventListener('click',closeModal);
+  $('#nw-create',ov).addEventListener('click',()=>{
+    const w=newWorld($('#nw-name',ov).value.trim()||'New world',$('#nw-preset',ov).value);
+    closeModal(); commit(()=>{ S.worlds.push(w); S.activeId=w.id; ui$.selected=null; ui$.month=null; });
+    toast('World created. Adjust its calendar any time.');
+  });
+}
+
+/* calendar editor */
+function openCalendarEditor(){
+  const w=W();
+  const draft={name:w.name, cal:JSON.parse(JSON.stringify(w.calendar))};
+  draft.cal.preEra=draft.cal.preEra||{name:'',abbr:''};
+  const ov=openModal('World & calendar','',true);
+  const body=$('.modal-body',ov);
+  const sync=()=>{
+    draft.name=$('#ce-name',body).value;
+    $$('[data-mi]',body).forEach(tr=>{ const m=draft.cal.months[+tr.dataset.mi]; m.name=$('[data-f=name]',tr).value; m.days=parseInt($('[data-f=days]',tr).value,10)||0; m.ic=$('[data-f=ic]',tr).checked; });
+    draft.cal.weekdays=$('#ce-weekdays',body).value.split(',').map(s=>s.trim()).filter(Boolean);
+    const ep=$('#ce-epoch',body); draft.cal.epochWeekday=ep?(parseInt(ep.value,10)||0):0;
+    $$('[data-li]',body).forEach(tr=>{ const r=draft.cal.leap[+tr.dataset.li]; r.every=parseInt($('[data-f=every]',tr).value,10)||0; r.offset=parseInt($('[data-f=offset]',tr).value,10)||0; r.days=parseInt($('[data-f=days]',tr).value,10)||0; r.month=parseInt($('[data-f=month]',tr).value,10)||0; });
+    $$('[data-ei]',body).forEach(tr=>{ const r=draft.cal.eras[+tr.dataset.ei]; r.name=$('[data-f=name]',tr).value; r.abbr=$('[data-f=abbr]',tr).value; r.start=parseInt($('[data-f=start]',tr).value,10)||0; });
+    draft.cal.preEra={name:$('#ce-pre-name',body).value, abbr:$('#ce-pre-abbr',body).value};
+  };
+  const summary=()=>{
+    const c=draft.cal; if(!c.months.length) return 'Add at least one month.';
+    const lens=new Set(); for(let y=1;y<=400;y++) lens.add(yearLen(c,y));
+    return `Common year: ${calBase(c)} days · year lengths over 400 years: ${[...lens].sort((a,b)=>a-b).join(', ')} · average ${avgYear(c).toFixed(4)} days${c.weekdays.length?` · ${c.weekdays.length}-day week`:''}`;
+  };
+  const paint=()=>{
+    const c=draft.cal;
+    const monthOpts=sel=>c.months.map((m,i)=>`<option value="${i}"${i===sel?' selected':''}>${esc(m.name||('Month '+(i+1)))}</option>`).join('');
+    body.innerHTML=`
+      <div class="row">
+        <div class="field"><label for="ce-name">World name</label><input type="text" id="ce-name" value="${esc(draft.name)}"></div>
+        <div class="field"><label for="ce-preset">Replace calendar with a preset</label><div class="row" style="flex-wrap:nowrap"><select id="ce-preset" class="inp">${PRESETS.map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join('')}</select><button class="btn" id="ce-load">Load</button></div></div>
+      </div>
+      <fieldset><legend>Months</legend>
+        <div class="tbl-wrap"><table class="ed"><thead><tr><th>#</th><th>Name</th><th>Days</th><th title="Festival days or intercalary months sit outside the regular months">Festival</th><th></th></tr></thead><tbody>
+        ${c.months.map((m,i)=>`<tr data-mi="${i}"><td class="num">${i+1}</td><td><input class="inp" data-f="name" value="${esc(m.name)}" aria-label="Month ${i+1} name"></td><td style="width:90px"><input class="inp" type="number" min="0" data-f="days" value="${m.days}" aria-label="Days in month ${i+1}"></td><td style="width:70px;text-align:center"><input type="checkbox" data-f="ic"${m.ic?' checked':''} aria-label="Festival month"></td><td class="act"><button class="icon-btn sm" data-mup="${i}" aria-label="Move up"${i===0?' disabled':''}>${ui('up')}</button> <button class="icon-btn sm" data-mdn="${i}" aria-label="Move down"${i===c.months.length-1?' disabled':''}>${ui('down')}</button> <button class="icon-btn sm" data-mdel="${i}" aria-label="Remove month"${c.months.length<2?' disabled':''}>${ui('x')}</button></td></tr>`).join('')}
+        </tbody></table></div>
+        <div class="row"><button class="btn" id="ce-addm">${ui('plus')}Add month</button></div>
+        <p class="help">Festival months show as a single named day (e.g. “Midwinter”) and are marked ✦ in date pickers. A month can have 0 days and get its days only from a leap rule. Events keep their month number, so removing or reordering months moves them.</p>
+      </fieldset>
+      <fieldset><legend>Week</legend>
+        <div class="row">
+          <div class="field" style="flex:2 1 260px"><label for="ce-weekdays">Weekday names (comma separated, leave empty for none)</label><input type="text" id="ce-weekdays" value="${esc(c.weekdays.join(', '))}"></div>
+          ${c.weekdays.length?`<div class="field"><label for="ce-epoch">First day of year 1 is a</label><select id="ce-epoch">${c.weekdays.map((d,i)=>`<option value="${i}"${i===(+c.epochWeekday||0)?' selected':''}>${esc(d)}</option>`).join('')}</select></div>`:''}
+        </div>
+      </fieldset>
+      <fieldset><legend>Leap rules</legend>
+        ${c.leap.length?`<div class="tbl-wrap"><table class="ed"><thead><tr><th>Every N years</th><th>Offset</th><th>Add days</th><th>To month</th><th></th></tr></thead><tbody>
+        ${c.leap.map((r,i)=>`<tr data-li="${i}"><td><input class="inp" type="number" min="1" data-f="every" value="${r.every}" aria-label="Every N years"></td><td><input class="inp" type="number" data-f="offset" value="${r.offset}" aria-label="Offset"></td><td><input class="inp" type="number" data-f="days" value="${r.days}" aria-label="Days to add"></td><td><select class="inp" data-f="month" aria-label="Month">${monthOpts(r.month)}</select></td><td class="act"><button class="icon-btn sm" data-ldel="${i}" aria-label="Remove rule">${ui('x')}</button></td></tr>`).join('')}
+        </tbody></table></div>`:'<p class="help">No leap years. Every year has the same length.</p>'}
+        <div class="row"><button class="btn" id="ce-addl">${ui('plus')}Add leap rule</button></div>
+        <p class="help">A rule applies when (year − offset) divides evenly by N. Use negative days for exceptions, like the Gregorian “every 100 years, remove a day”.</p>
+      </fieldset>
+      <fieldset><legend>Eras</legend>
+        ${c.eras.length?`<div class="tbl-wrap"><table class="ed"><thead><tr><th>Name</th><th>Abbreviation</th><th>Starts at absolute year</th><th></th></tr></thead><tbody>
+        ${c.eras.map((r,i)=>`<tr data-ei="${i}"><td><input class="inp" data-f="name" value="${esc(r.name)}" aria-label="Era name"></td><td style="width:110px"><input class="inp" data-f="abbr" value="${esc(r.abbr)}" aria-label="Abbreviation"></td><td style="width:150px"><input class="inp" type="number" data-f="start" value="${r.start}" aria-label="Start year"></td><td class="act"><button class="icon-btn sm" data-edel="${i}" aria-label="Remove era">${ui('x')}</button></td></tr>`).join('')}
+        </tbody></table></div>`:'<p class="help">No eras. Years show as plain numbers and can go negative.</p>'}
+        <div class="row"><button class="btn" id="ce-adde">${ui('plus')}Add era</button></div>
+        <div class="row">
+          <div class="field"><label for="ce-pre-name">Years before the first era count backwards as</label><input type="text" id="ce-pre-name" value="${esc(c.preEra.name)}" placeholder="e.g. Before Founding"></div>
+          <div class="field" style="flex:0 1 140px"><label for="ce-pre-abbr">Abbreviation</label><input type="text" id="ce-pre-abbr" value="${esc(c.preEra.abbr)}" placeholder="BF"></div>
+        </div>
+        <p class="help">Leave the backwards name empty to show earlier years as zero and negatives (e.g. −340 DR).</p>
+      </fieldset>
+      <div class="summary" id="ce-summary">${esc(summary())}</div>
+      <p class="err" id="ce-err" hidden></p>
+      <div class="modal-foot">${S.worlds.length>1?`<button class="btn danger left" id="ce-delworld">${ui('trash')}Delete world</button>`:''}<button class="btn" data-close2>Cancel</button><button class="btn primary" id="ce-save">Save calendar</button></div>`;
+  };
+  paint();
+  body.addEventListener('change',()=>{ sync(); $('#ce-summary',body).textContent=summary(); });
+  body.addEventListener('click',ev=>{
+    const t=ev.target.closest('button'); if(!t) return; const c=draft.cal;
+    if(t.matches('[data-close2]')){ closeModal(); return; }
+    sync();
+    if(t.id==='ce-load'){ draft.cal=makeCalendar($('#ce-preset',body).value); paint(); return; }
+    if(t.id==='ce-addm'){ c.months.push({name:`Month ${c.months.length+1}`,days:30,ic:false}); paint(); return; }
+    if(t.dataset.mup){ const i=+t.dataset.mup; [c.months[i-1],c.months[i]]=[c.months[i],c.months[i-1]]; c.leap.forEach(r=>{ if(r.month===i) r.month=i-1; else if(r.month===i-1) r.month=i; }); paint(); return; }
+    if(t.dataset.mdn){ const i=+t.dataset.mdn; [c.months[i+1],c.months[i]]=[c.months[i],c.months[i+1]]; c.leap.forEach(r=>{ if(r.month===i) r.month=i+1; else if(r.month===i+1) r.month=i; }); paint(); return; }
+    if(t.dataset.mdel){ const i=+t.dataset.mdel; c.months.splice(i,1); c.leap=c.leap.filter(r=>r.month!==i).map(r=>({...r,month:r.month>i?r.month-1:r.month})); paint(); return; }
+    if(t.id==='ce-addl'){ c.leap.push({every:4,offset:0,month:0,days:1}); paint(); return; }
+    if(t.dataset.ldel){ c.leap.splice(+t.dataset.ldel,1); paint(); return; }
+    if(t.id==='ce-adde'){ const last=sortedEras(c).pop(); c.eras.push({name:'New era',abbr:'NE',start:last?last.start+1000:1}); paint(); return; }
+    if(t.dataset.edel){ c.eras.splice(+t.dataset.edel,1); paint(); return; }
+    if(t.id==='ce-delworld'){ armDelete(t,()=>{ closeModal(); commit(()=>{ S.worlds=S.worlds.filter(x=>x.id!==w.id); S.activeId=S.worlds[0].id; ui$.selected=null; ui$.month=null; }); toast('World deleted. Undo with Ctrl+Z'); }); return; }
+    if(t.id==='ce-save'){
+      const err=$('#ce-err',body), problems=[];
+      if(!c.months.length) problems.push('Add at least one month.');
+      if(calBase(c)<=0) problems.push('The year needs at least one day outside leap rules.');
+      c.months.forEach((m,i)=>{ if(!m.name.trim()) problems.push(`Month ${i+1} needs a name.`); const neg=c.leap.filter(r=>r.month===i&&r.days<0).reduce((s,r)=>s+r.days,0); if(m.days+neg<0) problems.push(`${m.name||'Month '+(i+1)} could end up with fewer than 0 days.`); });
+      c.leap.forEach((r,i)=>{ if(!(r.every>=1)) problems.push(`Leap rule ${i+1}: “every N years” must be 1 or more.`); });
+      if(problems.length){ err.hidden=false; err.textContent=problems.join(' '); return; }
+      closeModal(); ui$.month=null; commit(()=>{ w.name=draft.name.trim()||w.name; w.calendar=draft.cal; });
+      toast('Calendar saved');
+    }
+  });
+}
+
+/* categories */
+function openCategories(){
+  const w=W(); const draft=JSON.parse(JSON.stringify(w.categories));
+  const ov=openModal('Categories','');
+  const body=$('.modal-body',ov);
+  const sync=()=>$$('[data-ci]',body).forEach(tr=>{ const c=draft[+tr.dataset.ci]; c.name=$('[data-f=name]',tr).value; c.color=$('[data-f=color]',tr).value; });
+  const paint=()=>{
+    body.innerHTML=`<p class="help">Categories colour your events and let you show or hide groups. Click a category chip under “Events” to hide it.</p>
+      ${draft.length?`<table class="ed"><tbody>${draft.map((c,i)=>`<tr data-ci="${i}"><td style="width:54px"><input type="color" data-f="color" value="${c.color}" aria-label="Colour"></td><td><input class="inp" data-f="name" value="${esc(c.name)}" aria-label="Category name"></td><td class="act"><span class="count">${w.events.filter(e=>e.cat===c.id).length}</span> <button class="icon-btn sm" data-cdel="${i}" aria-label="Remove category">${ui('x')}</button></td></tr>`).join('')}</tbody></table>`:'<p class="help">No categories yet.</p>'}
+      <div class="row"><button class="btn" id="cat-add">${ui('plus')}Add category</button></div>
+      <p class="help">Removing a category keeps its events; they become uncategorised.</p>
+      <div class="modal-foot"><button class="btn" data-close2>Cancel</button><button class="btn primary" id="cat-save">Save categories</button></div>`;
+  };
+  paint();
+  const palette=['#3647a8','#1b8fd1','#b0142f','#2f9a2a','#b8891b','#7b3fa0','#c2410c','#0f766e','#6b7280'];
+  body.addEventListener('click',ev=>{ const t=ev.target.closest('button'); if(!t) return;
+    if(t.matches('[data-close2]')){ closeModal(); return; }
+    sync();
+    if(t.id==='cat-add'){ draft.push({id:uid(),name:'New category',color:palette[draft.length%palette.length]}); paint(); const ins=$$('[data-f=name]',body); ins[ins.length-1].select(); return; }
+    if(t.dataset.cdel){ draft.splice(+t.dataset.cdel,1); paint(); return; }
+    if(t.id==='cat-save'){ closeModal(); commit(()=>{ const ids=new Set(draft.map(c=>c.id)); w.categories=draft.map(c=>({...c,name:c.name.trim()||'Untitled'})); w.events.forEach(e=>{ if(e.cat && !ids.has(e.cat)) e.cat=''; }); }); toast('Categories saved'); }
+  });
+}
+
+/* date calculator */
+function openCalculator(){
+  const w=W(), cal=w.calendar; ensureView();
+  const base=w.now || fromDay(cal,w.view.start+(stageWidth()/2)/w.view.ppd);
+  const ov=openModal('Date calculator',`
+    <fieldset><legend>Add or subtract time</legend>
+      <div class="field"><span class="lbl">From</span>${dateFieldsHTML('cx',base)}</div>
+      <div class="row">
+        <div class="field"><label for="cx-yy">Years</label><input type="number" id="cx-yy" value="0"></div>
+        <div class="field"><label for="cx-mm">Months</label><input type="number" id="cx-mm" value="0"></div>
+        <div class="field"><label for="cx-dd">Days</label><input type="number" id="cx-dd" value="0"></div>
+      </div>
+      <div class="result" id="cx-out"></div>
+      <div class="row"><button class="btn" id="cx-now">${ui('now')}Set as now</button><button class="btn" id="cx-new">${ui('plus')}New event on this date</button></div>
+      <p class="help">Use negative numbers to go back in time. Years, then months, then days are applied in that order.</p>
+    </fieldset>
+    <fieldset><legend>Time between two dates</legend>
+      <div class="field"><span class="lbl">From</span>${dateFieldsHTML('ca',base)}</div>
+      <div class="field"><span class="lbl">To</span>${dateFieldsHTML('cb',base)}</div>
+      <div class="result" id="cb-out"></div>
+    </fieldset>`);
+  let result=base;
+  const calc=()=>{
+    let d=norm(cal,readDate('cx'));
+    d=addYears(cal,d,parseInt($('#cx-yy',ov).value,10)||0);
+    d=addMonths(cal,d,parseInt($('#cx-mm',ov).value,10)||0);
+    d=fromDay(cal,toDay(cal,d)+(parseInt($('#cx-dd',ov).value,10)||0));
+    result=d; $('#cx-out',ov).innerHTML=`<b>${esc(fmtDate(cal,d,true))}</b>`;
+    const a=toDay(cal,readDate('ca')), b=toDay(cal,readDate('cb')), diff=b-a, wk=cal.weekdays.length||7;
+    $('#cb-out',ov).innerHTML = diff===0 ? '<b>Same day</b>' : `<b>${esc(fmtSpan(cal,diff))}</b> ${diff<0?'earlier':'later'} · ${Math.abs(diff).toLocaleString()} days · ${(Math.abs(diff)/wk).toFixed(1)} weeks`;
+  };
+  calc(); ov.addEventListener('input',calc); ov.addEventListener('change',calc);
+  $('#cx-now',ov).addEventListener('click',()=>{ const d=result; closeModal(); commit(()=>{ w.now=d; }); toast('Current date set'); });
+  $('#cx-new',ov).addEventListener('click',()=>{ const d=result; closeModal(); openEventEditor(null,{start:d}); });
+}
+
+/* image export */
+function exportImage(){
+  if(S.mode==='month'){ toast('Switch to the timeline view to save an image'); return; }
+  renderTimeline();
+  const clone=svg.cloneNode(true);
+  const src=[svg,...$$('*',svg)], dst=[clone,...$$('*',clone)];
+  const props=['fill','stroke','stroke-width','stroke-dasharray','stroke-linecap','opacity','fill-opacity','stroke-opacity','font-family','font-size','font-weight','font-style','letter-spacing'];
+  src.forEach((el,i)=>{ const d=dst[i]; if(d.tagName==='title') return; const cs=getComputedStyle(el); props.forEach(p=>{ const v=cs.getPropertyValue(p); if(v) d.style.setProperty(p,v); }); d.removeAttribute('class'); });
+  $$('title',clone).forEach(t=>t.remove());
+  const W0=+svg.getAttribute('width'), H0=+svg.getAttribute('height');
+  const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('width',W0); bg.setAttribute('height',H0); bg.setAttribute('fill',getComputedStyle(tl).backgroundColor);
+  clone.insertBefore(bg,clone.firstChild);
+  clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+  const str=new XMLSerializer().serializeToString(clone);
+  const img=new Image();
+  img.onload=()=>{
+    const k=2, cv=document.createElement('canvas'); cv.width=W0*k; cv.height=H0*k;
+    const ctx=cv.getContext('2d'); ctx.scale(k,k); ctx.drawImage(img,0,0);
+    let url; try{ url=cv.toDataURL('image/png'); }catch(e){ toast('The image could not be created in this browser'); return; }
+    const ov=openModal('Timeline image',`<p class="help">This is the visible part of the timeline. Right-click (or long-press) the image to save or copy it, or use the download button.</p><img class="img-preview" id="img-out" src="${url}" alt="Timeline of ${esc(W().name)}"><div class="modal-foot"><button class="btn primary" id="img-dl">Download .png</button></div>`,true);
+    $('#img-dl',ov).addEventListener('click',()=>tryDownloadURL(slug(W().name)+'-timeline.png',url));
+  };
+  img.onerror=()=>toast('The image could not be created in this browser');
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(str);
+}
+
+/* data: export / import / CSV / Notion */
+function exportEvents(w){ return [...w.events].filter(e=>!(S.playerView&&e.secret)).sort((a,b)=>evStart(w,a)-evStart(w,b)); }
+function csvForWorld(w){
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const name=id=>{ const x=byId(w,id); return x?x.title:''; };
+  const head=['Title','Type','Start','End','Precision','Circa','StartYear','StartMonth','StartDay','EndYear','EndMonth','EndDay','Category','Icon','Location','Session','Secret','Repeats','Involved','LedTo','Tags','Link','Description'];
+  if(!S.playerView) head.push('DMNotes');
+  const rows=exportEvents(w).map(e=>{ const c=catOf(w,e.cat), en=e.end&&e.kind!=='moment'?e.end:null;
+    const row=[e.title,{moment:'moment',period:'period',life:'character'}[e.kind],fmtP(w.calendar,e.start,e.prec,false),en?fmtP(w.calendar,en,e.prec,false):'',e.prec,e.approx?'yes':'',e.start.y,e.start.m+1,e.start.d,en?en.y:'',en?en.m+1:'',en?en.d:'',c?c.name:'',e.icon,e.location,e.session,e.secret?'yes':'',repeatLabel(e),e.who.map(name).join(', '),e.ledTo.map(name).join(', '),e.tags.join(', '),e.link,e.desc];
+    if(!S.playerView) row.push(e.dmNotes);
+    return row.map(q).join('^'); });
+  return [head.map(q).join('^'),...rows].join('\r\n');
+}
+function notionMd(w){
+  const cell=v=>String(v??'').replace(/\|/g,'\\|').replace(/\r?\n/g,' ');
+  const evs=exportEvents(w);
+  let s=`# ${w.name}\n\n| Date | Event | Type | Category | Location | Session | Tags |\n|---|---|---|---|---|---|---|\n`;
+  for(const e of evs){ const c=catOf(w,e.cat); s+=`| ${cell(fmtEvDate(w,e))} | ${cell(e.title)} | ${{moment:'Moment',period:'Period',life:'Character'}[e.kind]} | ${cell(c?c.name:'')} | ${cell(e.location)} | ${cell(e.session)} | ${cell(e.tags.join(', '))} |\n`; }
+  const withText=evs.filter(e=>e.desc||(!S.playerView&&e.dmNotes));
+  if(withText.length){ s+='\n## Descriptions\n';
+    for(const e of withText){ s+=`\n### ${e.title}\n*${fmtEvDate(w,e)}*\n\n${e.desc||''}\n`; if(!S.playerView && e.dmNotes) s+=`\n> **DM notes:** ${e.dmNotes.replace(/\r?\n/g,' ')}\n`; } }
+  return s;
+}
+function tryDownload(name,text,mime,bom){
+  try{ const blob=new Blob([bom?'﻿':'',text],{type:mime}); const u=URL.createObjectURL(blob); tryDownloadURL(name,u); setTimeout(()=>URL.revokeObjectURL(u),1500); }catch(e){}
+}
+function tryDownloadURL(name,url){ try{ const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),500); }catch(e){} }
+function copyText(ta){
+  const fallback=()=>{ ta.select(); toast('Selected. Press Ctrl+C to copy'); };
+  try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(()=>toast('Copied'),fallback); return; } }catch(e){}
+  fallback();
+}
+function slug(s){ return (s||'world').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'world'; }
+function validWorld(x){ return x && typeof x==='object' && x.calendar && Array.isArray(x.calendar.months) && x.calendar.months.length && Array.isArray(x.events); }
+function cleanWorld(x){ x.id=uid(); x.name=x.name||'Imported world'; x.view=null; return upgradeWorld(x); }
+function openData(){
+  const w=W(); const json=JSON.stringify(S,null,1), csv=csvForWorld(w), mdTxt=notionMd(w);
+  const pv=S.playerView?' Player view is on, so secret events and DM notes are left out.':'';
+  const ov=openModal('Data',`
+    <fieldset><legend>Back up everything</legend>
+      <p class="help">All worlds, calendars, events and sessions as JSON, including secrets. If the download doesn't start, copy the text and save it as a .json file.</p>
+      <textarea class="code inp" id="dx-json" readonly aria-label="Backup JSON" style="height:110px;padding:8px">${esc(json)}</textarea>
+      <div class="row"><button class="btn" id="dx-copy">${ui('copy')}Copy JSON</button><button class="btn" id="dx-dl">Download .json</button></div>
+    </fieldset>
+    <fieldset><legend>Import</legend>
+      <p class="help">Load a backup file or paste JSON. A full backup or a single world both work.</p>
+      <input type="file" id="dx-file" accept=".json,application/json" aria-label="Choose a JSON file">
+      <textarea class="code inp" id="dx-paste" placeholder="…or paste JSON here" aria-label="Paste JSON" style="height:80px;padding:8px"></textarea>
+      <p class="err" id="dx-err" hidden></p>
+      <div class="row"><button class="btn" id="dx-add">Add as new world(s)</button><button class="btn danger" id="dx-replace">Replace everything</button></div>
+    </fieldset>
+    <fieldset><legend>For Notion: “${esc(w.name)}” as Markdown</legend>
+      <p class="help">Paste into a Notion page to get a table of events followed by their descriptions.${pv}</p>
+      <textarea class="code inp" id="dx-md" readonly aria-label="Markdown" style="height:90px;padding:8px">${esc(mdTxt)}</textarea>
+      <div class="row"><button class="btn" id="dx-mcopy">${ui('copy')}Copy Markdown</button><button class="btn" id="dx-mdl">Download .md</button></div>
+    </fieldset>
+    <fieldset><legend>Events of “${esc(w.name)}” as CSV</legend>
+      <p class="help">UTF-8 with BOM, “^” as the delimiter, every field quoted. Opens cleanly in Excel with Greek text.${pv}</p>
+      <textarea class="code inp" id="dx-csv" readonly aria-label="CSV" style="height:80px;padding:8px">${esc(csv)}</textarea>
+      <div class="row"><button class="btn" id="dx-ccopy">${ui('copy')}Copy CSV</button><button class="btn" id="dx-cdl">Download .csv</button></div>
+    </fieldset>`,true);
+  $('#dx-copy',ov).onclick=()=>copyText($('#dx-json',ov));
+  $('#dx-dl',ov).onclick=()=>tryDownload('timeline-keeper-backup.json',json,'application/json',false);
+  $('#dx-mcopy',ov).onclick=()=>copyText($('#dx-md',ov));
+  $('#dx-mdl',ov).onclick=()=>tryDownload(slug(w.name)+'.md',mdTxt,'text/markdown;charset=utf-8',false);
+  $('#dx-ccopy',ov).onclick=()=>copyText($('#dx-csv',ov));
+  $('#dx-cdl',ov).onclick=()=>tryDownload(slug(w.name)+'-events.csv',csv,'text/csv;charset=utf-8',true);
+  $('#dx-file',ov).addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ $('#dx-paste',ov).value=r.result; }; r.readAsText(f); });
+  const parse=()=>{
+    const err=$('#dx-err',ov); err.hidden=true;
+    let p; try{ p=JSON.parse($('#dx-paste',ov).value); }catch(e){ err.hidden=false; err.textContent='That text isn\'t valid JSON. Choose a backup file or paste the full JSON.'; return null; }
+    const worlds=Array.isArray(p&&p.worlds)?p.worlds:(validWorld(p)?[p]:null);
+    if(!worlds || !worlds.length || !worlds.every(validWorld)){ err.hidden=false; err.textContent='No worlds found. The JSON needs a calendar with months and an events list.'; return null; }
+    return worlds.map(x=>cleanWorld(JSON.parse(JSON.stringify(x))));
+  };
+  $('#dx-add',ov).onclick=()=>{ const ws=parse(); if(!ws) return; closeModal(); commit(()=>{ S.worlds.push(...ws); S.activeId=ws[0].id; ui$.selected=null; ui$.month=null; }); toast(`Imported ${ws.length} world${ws.length>1?'s':''}`); };
+  $('#dx-replace',ov).onclick=e=>{ const ws=parse(); if(!ws) return; armDelete(e.currentTarget,()=>{ closeModal(); commit(()=>{ S.worlds=ws; S.activeId=ws[0].id; ui$.selected=null; ui$.month=null; }); toast('Data replaced. Undo with Ctrl+Z'); }); };
+}
+
+/* toast */
+let toastT=null;
+function toast(msg){ let t=$('.toast'); if(!t){ t=document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); document.body.appendChild(t); } t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),2400); }
+
+/* ---------- wiring ---------- */
+function renderAll(){ renderHeader(); renderFilters(); renderList(); renderDetail(); schedule(); }
+const setBtn=(id,ic,label)=>{ $(id).innerHTML=ui(ic)+(label||''); };
+setBtn('#now-prev','chevL'); setBtn('#now-next','chevR'); setBtn('#btn-undo','undo');
+setBtn('#btn-player','eye','Player view'); setBtn('#btn-calendar','cal','Calendar'); setBtn('#btn-cats','tag','Categories');
+setBtn('#btn-data','data','Data'); setBtn('#btn-add','plus','Add event');
+setBtn('#mode-tl','timeline','Timeline'); setBtn('#mode-mv','grid','Month');
+setBtn('#zoom-in','plus'); setBtn('#zoom-out','minus'); setBtn('#zoom-fit','fit','Fit all'); setBtn('#zoom-now','now','Now');
+setBtn('#btn-image','image','Image'); setBtn('#btn-calc','calc','Calculator');
+setBtn('#mv-prev','chevL'); setBtn('#mv-next','chevR'); setBtn('#mv-prevy','dchevL'); setBtn('#mv-nexty','dchevR');
+$('#search-ico').outerHTML=ui('search');
+
+$('#now-prev').onclick=()=>stepNow(-1); $('#now-next').onclick=()=>stepNow(1); $('#now-open').onclick=openNowModal;
+$('#btn-undo').onclick=undo; $('#btn-player').onclick=togglePlayer;
+$('#btn-calendar').onclick=openCalendarEditor; $('#btn-cats').onclick=openCategories; $('#btn-data').onclick=openData;
+$('#btn-add').onclick=()=>openEventEditor(null);
+$('#zoom-in').onclick=()=>zoomAt(1.5,tl.clientWidth/2); $('#zoom-out').onclick=()=>zoomAt(1/1.5,tl.clientWidth/2);
+$('#zoom-fit').onclick=()=>fitAll(false); $('#zoom-now').onclick=jumpNow;
+$('#btn-image').onclick=exportImage; $('#btn-calc').onclick=openCalculator;
+$('#mv-prev').onclick=()=>stepMonth(-1); $('#mv-next').onclick=()=>stepMonth(1);
+$('#mv-prevy').onclick=()=>stepMonth(-W().calendar.months.length); $('#mv-nexty').onclick=()=>stepMonth(W().calendar.months.length);
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && !pop.hidden){ hidePop(); return; }
+  if(e.key==='Escape' && overlay){ closeModal(); return; }
+  if(overlay) return;
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement||{}).tagName);
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z' && !typing){ e.preventDefault(); undo(); return; }
+  if(typing || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k=e.key, month=S.mode==='month';
+  if(k==='n'||k==='N'){ e.preventDefault(); openEventEditor(null); }
+  else if(k==='m'||k==='M') setMode(month?'timeline':'month');
+  else if(k==='p'||k==='P') togglePlayer();
+  else if(k==='.') jumpNow();
+  else if(k==='Escape' && ui$.focusChar){ ui$.focusChar=null; schedule(); }
+  else if(k==='Escape' && ui$.selected) select(null,false);
+  else if(month){ if(k==='ArrowLeft') stepMonth(-1); else if(k==='ArrowRight') stepMonth(1); }
+  else if(k==='f'||k==='F') fitAll(false);
+  else if(k==='+'||k==='=') zoomAt(1.5,tl.clientWidth/2);
+  else if(k==='-'||k==='_') zoomAt(1/1.5,tl.clientWidth/2);
+  else if(k==='ArrowLeft'){ const v=W().view; v.start-=tl.clientWidth*0.15/v.ppd; saveSoon(); schedule(); }
+  else if(k==='ArrowRight'){ const v=W().view; v.start+=tl.clientWidth*0.15/v.ppd; saveSoon(); schedule(); }
+});
+
+S=load();
+S.mode=S.mode==='month'?'month':'timeline'; S.playerView=!!S.playerView;
+if(!S.worlds.some(w=>w.id===S.activeId)) S.activeId=S.worlds[0].id;
+renderAll();
+saveNow();
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ mcache.clear(); schedule(); });
+})();
+</script>
+</body>
+</html>

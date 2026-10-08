@@ -1,0 +1,1359 @@
+{
+ "version": 3,
+ "activeId": "kainlbwp",
+ "worlds": [
+  {
+   "id": "kainlbwp",
+   "name": "Ashen Chronicle (Scarred Lands)",
+   "calendar": {
+    "preset": "scarred",
+    "months": [
+     {
+      "name": "Iceheart",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Frostbloom",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Stormwatch",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Cloudbreak",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Winddance",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Firethorn",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Sunspark",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Starfall",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Emberfall",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Leafwilt",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Moonwhisper",
+      "days": 28,
+      "ic": false
+     },
+     {
+      "name": "Snowshimmer",
+      "days": 28,
+      "ic": false
+     }
+    ],
+    "weekdays": [
+     "Moonday",
+     "Tidesday",
+     "Glimmerday",
+     "Dreamday",
+     "Soothingday",
+     "Dazzleday",
+     "Sunburstday"
+    ],
+    "epochWeekday": 0,
+    "leap": [],
+    "eras": [],
+    "preEra": {
+     "name": "",
+     "abbr": ""
+    }
+   },
+   "categories": [
+    {
+     "id": "c-ash",
+     "name": "Ashen Empire",
+     "color": "#3b2bb0"
+    },
+    {
+     "id": "c-iris",
+     "name": "Iris",
+     "color": "#1b8fd1"
+    },
+    {
+     "id": "c-cat",
+     "name": "Catastrophes",
+     "color": "#b0142f"
+    },
+    {
+     "id": "c-war",
+     "name": "Wars & Sieges",
+     "color": "#2f7fc4"
+    },
+    {
+     "id": "c-turn",
+     "name": "Turning Points",
+     "color": "#2f9a2a"
+    },
+    {
+     "id": "c-wx",
+     "name": "Weather",
+     "color": "#b8891b"
+    }
+   ],
+   "events": [
+    {
+     "id": "k0ayxlxn",
+     "title": "Iris",
+     "kind": "life",
+     "start": {
+      "y": 1190,
+      "m": 0,
+      "d": 1
+     },
+     "end": null,
+     "prec": "year",
+     "approx": true,
+     "cat": "c-iris",
+     "icon": "person",
+     "color": "",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "Character entry. Set her real birth year, or untick “approximate” once you know it.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "vruyeo5e",
+     "title": "Fall From Grace",
+     "kind": "moment",
+     "start": {
+      "y": 1219,
+      "m": 0,
+      "d": 3
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "crown",
+     "color": "",
+     "line": true,
+     "tags": [
+      "ashen"
+     ],
+     "link": "",
+     "desc": "Volcanus trapped and Vulrathar dies",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "lw49t662",
+     "title": "Trapped in Frozen Wastes",
+     "kind": "moment",
+     "start": {
+      "y": 1219,
+      "m": 6,
+      "d": 18
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-iris",
+     "icon": "mountain",
+     "color": "",
+     "line": false,
+     "tags": [
+      "iris"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [
+      "k0ayxlxn"
+     ],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "psnixh1i",
+     "title": "Iris awakes as a Reborn",
+     "kind": "moment",
+     "start": {
+      "y": 1219,
+      "m": 9,
+      "d": 1
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-iris",
+     "icon": "eye",
+     "color": "",
+     "line": false,
+     "tags": [
+      "iris",
+      "reborn"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [
+      "k0ayxlxn"
+     ],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "4o593q0m",
+     "title": "Volcanus Returns",
+     "kind": "moment",
+     "start": {
+      "y": 1221,
+      "m": 3,
+      "d": 18
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-cat",
+     "icon": "flame",
+     "color": "",
+     "line": true,
+     "tags": [
+      "volcanus"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "yjbekwpk",
+     "title": "Lord's Empire Crushed",
+     "kind": "moment",
+     "start": {
+      "y": 1222,
+      "m": 9,
+      "d": 18
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-cat",
+     "icon": "crown",
+     "color": "",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "vb87baid",
+     "title": "Sphera Destroyed",
+     "kind": "moment",
+     "start": {
+      "y": 1223,
+      "m": 9,
+      "d": 18
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-cat",
+     "icon": "skull",
+     "color": "",
+     "line": true,
+     "tags": [
+      "sphera"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "Sphera",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "z6cd8gbl",
+     "title": "New Grandia destroyed",
+     "kind": "moment",
+     "start": {
+      "y": 1226,
+      "m": 2,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-cat",
+     "icon": "skull",
+     "color": "",
+     "line": true,
+     "tags": [
+      "new grandia"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "New Grandia",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "1nagpqym",
+     "title": "The Ashen Withdraw",
+     "kind": "moment",
+     "start": {
+      "y": 1231,
+      "m": 2,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-turn",
+     "icon": "flag",
+     "color": "",
+     "line": true,
+     "tags": [
+      "ashen"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "6b1j6wo9",
+     "title": "Coordinated Attack vs Ashen",
+     "kind": "moment",
+     "start": {
+      "y": 1233,
+      "m": 10,
+      "d": 23
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "sword",
+     "color": "",
+     "line": true,
+     "tags": [
+      "ashen"
+     ],
+     "link": "",
+     "desc": "All cities except Thundermount, bittered from no assistance before and conserving resources against a new siege. The attack failed with great losses in both sides.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "9z05jx7r",
+     "title": "City Grand Ashen Founded",
+     "kind": "moment",
+     "start": {
+      "y": 1240,
+      "m": 0,
+      "d": 1
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "castle",
+     "color": "",
+     "line": true,
+     "tags": [
+      "ashen"
+     ],
+     "link": "",
+     "desc": "In the place of New Grandia a new city was founded to act as an Ashen military front.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "Grand Ashen",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "n1qfexu2",
+     "title": "Iris reaches the greater Wyldermoore Area",
+     "kind": "moment",
+     "start": {
+      "y": 1248,
+      "m": 6,
+      "d": 1
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-iris",
+     "icon": "pin",
+     "color": "",
+     "line": false,
+     "tags": [
+      "iris",
+      "wyldermoore"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "Wyldermoore",
+     "session": "",
+     "who": [
+      "k0ayxlxn"
+     ],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "9tsvz9ri",
+     "title": "Ashen failed attack on Wyldermoore",
+     "kind": "moment",
+     "start": {
+      "y": 1248,
+      "m": 10,
+      "d": 23
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-cat",
+     "icon": "shield",
+     "color": "",
+     "line": false,
+     "tags": [
+      "ashen",
+      "wyldermoore"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "Wyldermoore",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "q2p269pt",
+     "title": "Ashen Civil War",
+     "kind": "period",
+     "start": {
+      "y": 1219,
+      "m": 0,
+      "d": 1
+     },
+     "end": {
+      "y": 1221,
+      "m": 3,
+      "d": 18
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-war",
+     "icon": "sword",
+     "color": "",
+     "line": true,
+     "tags": [
+      "ashen"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "s9t23jx5",
+     "title": "Dark Citadel Under Siege",
+     "kind": "period",
+     "start": {
+      "y": 1221,
+      "m": 8,
+      "d": 12
+     },
+     "end": {
+      "y": 1222,
+      "m": 9,
+      "d": 18
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-war",
+     "icon": "castle",
+     "color": "",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "Dark Citadel",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "c5mmrzyx",
+     "title": "Sphera Under Siege",
+     "kind": "period",
+     "start": {
+      "y": 1223,
+      "m": 8,
+      "d": 23
+     },
+     "end": {
+      "y": 1223,
+      "m": 9,
+      "d": 16
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-war",
+     "icon": "shield",
+     "color": "",
+     "line": false,
+     "tags": [
+      "sphera"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "Sphera",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "adrsts9e",
+     "title": "New Grandia Under Siege",
+     "kind": "period",
+     "start": {
+      "y": 1225,
+      "m": 0,
+      "d": 1
+     },
+     "end": {
+      "y": 1226,
+      "m": 2,
+      "d": 12
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-war",
+     "icon": "shield",
+     "color": "",
+     "line": true,
+     "tags": [
+      "new grandia"
+     ],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "New Grandia",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "e5w64bwg",
+     "title": "Thundermount Under Siege",
+     "kind": "period",
+     "start": {
+      "y": 1226,
+      "m": 9,
+      "d": 18
+     },
+     "end": {
+      "y": 1231,
+      "m": 2,
+      "d": 12
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-war",
+     "icon": "mountain",
+     "color": "",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "Thundermount",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "zc4kjlv3",
+     "title": "The Weather Wars",
+     "kind": "period",
+     "start": {
+      "y": 1242,
+      "m": 0,
+      "d": 17
+     },
+     "end": {
+      "y": 1247,
+      "m": 4,
+      "d": 23
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-wx",
+     "icon": "zap",
+     "color": "",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "Horrible weather phenomena raging all over, isolating cities and forcing the Ashen to withdraw.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "ohfxi781",
+     "title": "Ashen Attacks Wyldermoore and Memento",
+     "kind": "period",
+     "start": {
+      "y": 1248,
+      "m": 8,
+      "d": 25
+     },
+     "end": {
+      "y": 1250,
+      "m": 2,
+      "d": 12
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "sword",
+     "color": "",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "h151zrc3",
+     "title": "Ashen withdraw entirely",
+     "kind": "moment",
+     "start": {
+      "y": 1250,
+      "m": 2,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "star",
+     "color": "",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "d50rmhja",
+     "title": "Ashen tries to reach The Scar",
+     "kind": "period",
+     "start": {
+      "y": 1250,
+      "m": 3,
+      "d": 7
+     },
+     "end": {
+      "y": 1250,
+      "m": 8,
+      "d": 18
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "skull",
+     "color": "#b12b2b",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "If Volcanus reaches the Scar, the end of the entire plane is assured.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "t2a73eh7",
+     "title": "Godfall - The Twilight of the Gods",
+     "kind": "moment",
+     "start": {
+      "y": 1250,
+      "m": 8,
+      "d": 18
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "moon",
+     "color": "#ff1100",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "All nations work together and attack from all sides. \nThe Lord assists in this battle with all his children.\n\nJason and Shade fight as well. They lead the battle against the ever-growing power of Volcanus.  \n\nVolcanus dies and at that moment the Tempest draws out his strength and claims it as his own and becomes almighty. The Lord betrays him, he has setup a very powerful trap with the magic ritual that broke his world and drains him from all his power and kills him.\n\nAs his final act, Tempest releases the Drift from its prison and casts a last spell with his waning power.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "tuzejq5y",
+     "title": "Lylandra dies",
+     "kind": "moment",
+     "start": {
+      "y": 1249,
+      "m": 9,
+      "d": 9
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "skull",
+     "color": "#fe0606",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "ffvsv8v5",
+     "title": "Roselya dies",
+     "kind": "moment",
+     "start": {
+      "y": 1249,
+      "m": 3,
+      "d": 11
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "skull",
+     "color": "#fe0606",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "bgge53cv",
+     "title": "Erinya dies",
+     "kind": "moment",
+     "start": {
+      "y": 1249,
+      "m": 6,
+      "d": 21
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "skull",
+     "color": "#fe0606",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "drhtmlr6",
+     "title": "Iris hunts Sloth",
+     "kind": "moment",
+     "start": {
+      "y": 1250,
+      "m": 8,
+      "d": 21
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "eye",
+     "color": "#bade35",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "She finds his mansion and infiltrates it. Sloth is weakened from the battle but she fails to kill him, runs away carrying Kyle who's almost lost in complete madness.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [
+      "k0ayxlxn"
+     ],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "oy55twqp",
+     "title": "Towards the Drift",
+     "kind": "period",
+     "start": {
+      "y": 1254,
+      "m": 7,
+      "d": 17
+     },
+     "end": {
+      "y": 1257,
+      "m": 0,
+      "d": 2
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-iris",
+     "icon": "star",
+     "color": "#0e26dd",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "The Drift recovers and gathers powers to face a much more powerful and ready Lord",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "on5e3nap",
+     "title": "Quest for a healer",
+     "kind": "period",
+     "start": {
+      "y": 1250,
+      "m": 10,
+      "d": 6
+     },
+     "end": {
+      "y": 1254,
+      "m": 7,
+      "d": 17
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-iris",
+     "icon": "heart",
+     "color": "#2bb13a",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "ehb1w6tz",
+     "title": "Iris learns the Drift is back",
+     "kind": "moment",
+     "start": {
+      "y": 1254,
+      "m": 7,
+      "d": 17
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "heart",
+     "color": "#d6fe10",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "f1oyh2fx",
+     "title": "Lord recovers",
+     "kind": "moment",
+     "start": {
+      "y": 1253,
+      "m": 5,
+      "d": 17
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "skull",
+     "color": "#2d2d2f",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "He's trying to tame his newfound powers and control them. Grows stronger by the day.",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "pqmws0mx",
+     "title": "Iris and Kyle return to the Drift",
+     "kind": "moment",
+     "start": {
+      "y": 1257,
+      "m": 0,
+      "d": 2
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "heart",
+     "color": "#d6fe10",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "zv4xw2qa",
+     "title": "Captain issues new orders",
+     "kind": "moment",
+     "start": {
+      "y": 1257,
+      "m": 6,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "crown",
+     "color": "#fffa70",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "lmko358c",
+     "title": "Arcane magic is weakening",
+     "kind": "moment",
+     "start": {
+      "y": 1266,
+      "m": 2,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "moon",
+     "color": "#ff66eb",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "w43lxnw3",
+     "title": "Divine magic is weakening",
+     "kind": "moment",
+     "start": {
+      "y": 1269,
+      "m": 2,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "moon",
+     "color": "#5bcfec",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "dab64yy8",
+     "title": "The Last Frozen Edge Expedition",
+     "kind": "moment",
+     "start": {
+      "y": 1274,
+      "m": 2,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "star",
+     "color": "#b6076d",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "v4hvvq3u",
+     "title": "Great Quakes",
+     "kind": "period",
+     "start": {
+      "y": 1250,
+      "m": 8,
+      "d": 18
+     },
+     "end": {
+      "y": 1250,
+      "m": 9,
+      "d": 28
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "c-cat",
+     "icon": "star",
+     "color": "#735459",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "fs46s4l7",
+     "title": "Quest for Magic",
+     "kind": "period",
+     "start": {
+      "y": 1268,
+      "m": 2,
+      "d": 25
+     },
+     "end": {
+      "y": 1275,
+      "m": 2,
+      "d": 12
+     },
+     "prec": "day",
+     "approx": false,
+     "cat": "",
+     "icon": "star",
+     "color": "#e2cee3",
+     "line": true,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "cbh3hh00",
+     "title": "Frozen Edge Expedition (Sherina)",
+     "kind": "moment",
+     "start": {
+      "y": 1265,
+      "m": 2,
+      "d": 12
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "mountain",
+     "color": "",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "ej2yr2am",
+     "title": "Frozen Edge Expedition (Frost Queen)",
+     "kind": "moment",
+     "start": {
+      "y": 1269,
+      "m": 7,
+      "d": 14
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "mountain",
+     "color": "",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "dror6uhn",
+     "title": "Attack on Sloth",
+     "kind": "moment",
+     "start": {
+      "y": 1270,
+      "m": 8,
+      "d": 18
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "mountain",
+     "color": "",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    },
+    {
+     "id": "902f8isi",
+     "title": "Island of the Vampire",
+     "kind": "moment",
+     "start": {
+      "y": 1272,
+      "m": 1,
+      "d": 9
+     },
+     "end": null,
+     "prec": "day",
+     "approx": false,
+     "cat": "c-ash",
+     "icon": "skull",
+     "color": "",
+     "line": false,
+     "tags": [],
+     "link": "",
+     "desc": "",
+     "dmNotes": "",
+     "secret": false,
+     "location": "",
+     "session": "1",
+     "who": [],
+     "ledTo": [],
+     "repeat": null
+    }
+   ],
+   "now": {
+    "y": 1249,
+    "m": 2,
+    "d": 12
+   },
+   "session": 1,
+   "sessionLog": [],
+   "view": {
+    "ppd": 0.11467631389174379,
+    "start": 413280.6559623295
+   }
+  }
+ ],
+ "playerView": false,
+ "mode": "timeline"
+}
