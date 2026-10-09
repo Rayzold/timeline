@@ -27,6 +27,7 @@ Open `index.html` in a browser, or serve the repository with GitHub Pages. There
 
 | Key | Action |
 | --- | --- |
+| `?` | Help: how the timeline works |
 | `N` | New event |
 | `M` | Switch timeline / month view |
 | `P` | Player view |
