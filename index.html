@@ -331,6 +331,7 @@ table.ed td.act{white-space:nowrap;width:1%}
     </div>
     <button class="btn" id="zoom-now" title="Jump to the current date (.)"></button>
     <button class="btn" id="btn-calc" title="Date calculator"></button>
+    <button class="btn" id="btn-bm" title="Bookmarks: Shift+1…9 saves the view, 1…9 jumps, Backspace goes back"></button>
     <span class="range" id="range"></span>
     <div class="spacer"></div>
     <span class="hint" id="hint"></span>
@@ -626,6 +627,7 @@ function upgradeWorld(w){
   if(!(w.session>=1)) w.session=1;
   if(!Array.isArray(w.sessionLog)) w.sessionLog=[];
   if(!Array.isArray(w.hiddenChars)) w.hiddenChars=[];
+  if(!w.bookmarks || typeof w.bookmarks!=='object' || Array.isArray(w.bookmarks)) w.bookmarks={};
   if(w.charsOpen===undefined) w.charsOpen=true;
   const c=w.calendar; c.weekdays=c.weekdays||[]; c.leap=c.leap||[]; c.eras=c.eras||[]; c.preEra=c.preEra||{name:'',abbr:''};
   w.events=w.events.filter(e=>e&&e.start).map(e=>{ const out=Object.assign(blankEvent({}),e);
@@ -783,6 +785,7 @@ const stageWidth = () => tl.clientWidth || mv.clientWidth || 900;
 
 function ensureView(){ const w=W(); if(!w.view || !isFinite(w.view.ppd) || !isFinite(w.view.start)) fitAll(true); }
 function fitAll(silent){
+  if(!silent) pushBack();
   const w=W(), cal=w.calendar; let lo=Infinity, hi=-Infinity;
   const pool=w.events.filter(e=>visibleEv(w,e)); const core=pool.filter(e=>e.kind!=='life');
   for(const e of (core.length?core:pool)){ lo=Math.min(lo,evStart(w,e)); hi=Math.max(hi,evEnd(w,e)); }
@@ -799,14 +802,69 @@ function fitAll(silent){
 function jumpNow(){
   const w=W(); if(!w.now){ toast('Set a current date first'); openNowModal(); return; }
   if(S.mode==='month'){ ui$.month={y:w.now.y,m:w.now.m}; schedule(); return; }
-  ensureView(); const n=toDay(w.calendar,w.now); w.view.start=n-(stageWidth()/2)/w.view.ppd; saveSoon(); schedule();
+  pushBack(); ensureView(); const n=toDay(w.calendar,w.now); w.view.start=n-(stageWidth()/2)/w.view.ppd; saveSoon(); schedule();
 }
 function centerOn(e){
   const w=W(); ensureView(); const v=w.view, width=stageWidth();
   if(S.mode==='month'){ ui$.month={y:e.start.y,m:e.start.m}; return; }
+  pushBack();
   const a=evStart(w,e), b=evEnd(w,e);
   if(e.kind!=='moment'){ const span=b-a, visible=width/v.ppd; if(span>visible*0.9 || span<visible*0.05) v.ppd=clamp(width/(span*1.5),MIN_PPD,MAX_PPD); }
   v.start=(a+b)/2-(width/2)/v.ppd; saveSoon();
+}
+/* ---------- bookmarks & back ---------- */
+const backStack=[];
+function pushBack(){ const w=W(); if(!w.view) return; const v={ppd:w.view.ppd,start:w.view.start};
+  const t=backStack[backStack.length-1]; if(t && t.world===w.id && Math.abs(t.ppd-v.ppd)<1e-12 && Math.abs(t.start-v.start)<1e-6) return;
+  backStack.push({world:w.id,...v}); if(backStack.length>40) backStack.shift(); }
+function goBack(){
+  const w=W(); let t; while((t=backStack.pop()) && t.world!==w.id){}
+  if(!t){ toast('Nothing to go back to'); return; }
+  if(S.mode!=='timeline'){ S.mode='timeline'; renderAll(); }
+  w.view={ppd:t.ppd,start:t.start}; recenterAxis=true; saveSoon(); schedule(); toast('Back');
+}
+function viewLabel(w,v){
+  const cal=w.calendar, W0=stageWidth(), a=fromDay(cal,v.start), b=fromDay(cal,v.start+W0/v.ppd), ppy=avgYear(cal)*v.ppd;
+  return ppy>=420 ? `${fmtDate(cal,a)} – ${fmtDate(cal,b)}` : `${fmtYear(cal,a.y)} – ${fmtYear(cal,b.y)}`;
+}
+function centerLabel(w,v){ const cal=w.calendar; const c=fromDay(cal,v.start+stageWidth()/2/v.ppd); return avgYear(cal)*v.ppd>=420 ? `${cal.months[c.m].name} ${fmtYear(cal,c.y)}` : fmtYear(cal,c.y); }
+function saveBookmark(n){
+  const w=W(); ensureView();
+  const old=w.bookmarks[n];
+  commit(()=>{ w.bookmarks[n]={name: old&&old.name ? old.name : centerLabel(w,w.view), ppd:w.view.ppd, start:w.view.start, at:Date.now()}; });
+  toast(`Bookmark ${n} ${old?'updated':'saved'}: ${w.bookmarks[n].name}. Press ${n} to return`);
+}
+function gotoBookmark(n){
+  const w=W(), b=w.bookmarks[n];
+  if(!b){ toast(`Bookmark ${n} is empty. Press Shift+${n} to save the current view`); return; }
+  pushBack(); hidePop();
+  if(S.mode!=='timeline'){ S.mode='timeline'; renderAll(); }
+  w.view={ppd:b.ppd,start:b.start}; recenterAxis=true; saveSoon(); schedule();
+  toast(`${n} · ${b.name}`);
+}
+function openBookmarks(){
+  const w=W(); ensureView();
+  const ov=openModal('Bookmarks','',false); const body=$('.modal-body',ov);
+  const paint=()=>{
+    body.innerHTML=`<p class="help">A bookmark remembers a place and zoom on the timeline. <kbd>Shift</kbd>+<kbd>1</kbd>…<kbd>9</kbd> saves the current view, <kbd>1</kbd>…<kbd>9</kbd> jumps to it and <kbd>Backspace</kbd> goes back.</p>
+      <div class="tbl-wrap"><table class="ed"><thead><tr><th>Key</th><th>Name</th><th>Shows</th><th></th></tr></thead><tbody>
+      ${[1,2,3,4,5,6,7,8,9].map(n=>{ const b=w.bookmarks[n];
+        return `<tr data-bm="${n}"><td class="num"><kbd>${n}</kbd></td>
+          <td>${b?`<input class="inp" data-f="name" value="${esc(b.name)}" aria-label="Bookmark ${n} name">`:'<span class="help">Empty</span>'}</td>
+          <td style="font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap">${b?esc(viewLabel(w,b)):''}</td>
+          <td class="act">${b?`<button class="btn" data-act="go">Go</button> `:''}<button class="btn" data-act="set" title="Save the current view in this slot">${b?'Replace':'Save current view'}</button>${b?` <button class="icon-btn sm" data-act="del" aria-label="Remove bookmark ${n}">${ui('x')}</button>`:''}</td></tr>`; }).join('')}
+      </tbody></table></div>
+      <div class="modal-foot"><button class="btn primary" data-close2>Done</button></div>`;
+  };
+  paint();
+  body.addEventListener('change',e=>{ const r=e.target.closest('[data-bm]'); if(!r||e.target.dataset.f!=='name') return; const n=r.dataset.bm, v=e.target.value.trim(); if(!v) return; commit(()=>{ w.bookmarks[n].name=v; }); });
+  body.addEventListener('click',e=>{
+    if(e.target.closest('[data-close2]')){ closeModal(); return; }
+    const b=e.target.closest('[data-act]'); if(!b) return; const n=b.closest('[data-bm]').dataset.bm;
+    if(b.dataset.act==='go'){ closeModal(); gotoBookmark(n); }
+    else if(b.dataset.act==='set'){ saveBookmark(n); paint(); }
+    else if(b.dataset.act==='del'){ commit(()=>{ delete w.bookmarks[n]; }); paint(); }
+  });
 }
 function zoomAt(factor,px){
   const v=W().view; const d=v.start+px/v.ppd;
@@ -1345,7 +1403,7 @@ function renderDetail(){
     box.innerHTML=`<div class="welcome"><h3>${esc(w.name)}</h3>
       <div class="stats"><div><b>${evs.filter(x=>x.kind==='moment').length}</b><span>moments</span></div><div><b>${evs.filter(x=>x.kind==='period').length}</b><span>periods</span></div><div><b>${evs.filter(x=>x.kind==='life').length}</b><span>characters</span></div><div><b>${calBase(cal)}</b><span>days a year</span></div></div>
       <p>The chronicle spans ${esc(span)}. Select an event on the timeline, the month grid or the list to read it here.</p>
-      <p>Shortcuts: <kbd>N</kbd> new event, <kbd>M</kbd> timeline / month, <kbd>P</kbd> player view, <kbd>F</kbd> fit all, <kbd>.</kbd> jump to now, <kbd>+</kbd>/<kbd>−</kbd> zoom, <kbd>←</kbd>/<kbd>→</kbd> pan, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo.</p></div>`;
+      <p>Shortcuts: <kbd>N</kbd> new event, <kbd>M</kbd> timeline / month, <kbd>P</kbd> player view, <kbd>F</kbd> fit all, <kbd>.</kbd> jump to now, <kbd>+</kbd>/<kbd>−</kbd> zoom, <kbd>←</kbd>/<kbd>→</kbd> pan, <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo, <kbd>Shift</kbd>+<kbd>1</kbd>…<kbd>9</kbd> save a bookmark, <kbd>1</kbd>…<kbd>9</kbd> jump to it, <kbd>Backspace</kbd> back.</p></div>`;
     return;
   }
   const c=evColor(w,e), cat=catOf(w,e.cat), s=evStart(w,e), en=evEnd(w,e);
@@ -1877,6 +1935,7 @@ setBtn('#btn-data','data','Data'); setBtn('#btn-add','plus','Add event');
 setBtn('#mode-tl','timeline','Timeline'); setBtn('#mode-mv','grid','Month');
 setBtn('#zoom-in','plus'); setBtn('#zoom-out','minus'); setBtn('#zoom-fit','fit','Fit all'); setBtn('#zoom-now','now','Now');
 setBtn('#btn-image','image','Image'); setBtn('#btn-calc','calc','Calculator');
+UI.bookmark='<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>'; setBtn('#btn-bm','bookmark','Bookmarks');
 setBtn('#mv-prev','chevL'); setBtn('#mv-next','chevR'); setBtn('#mv-prevy','dchevL'); setBtn('#mv-nexty','dchevR');
 $('#search-ico').outerHTML=ui('search');
 
@@ -1886,7 +1945,7 @@ $('#btn-calendar').onclick=openCalendarEditor; $('#btn-cats').onclick=openCatego
 $('#btn-add').onclick=()=>openEventEditor(null);
 $('#zoom-in').onclick=()=>zoomAt(1.5,tl.clientWidth/2); $('#zoom-out').onclick=()=>zoomAt(1/1.5,tl.clientWidth/2);
 $('#zoom-fit').onclick=()=>fitAll(false); $('#zoom-now').onclick=jumpNow;
-$('#btn-image').onclick=exportImage; $('#btn-calc').onclick=openCalculator;
+$('#btn-image').onclick=exportImage; $('#btn-calc').onclick=openCalculator; $('#btn-bm').onclick=openBookmarks;
 $('#mv-prev').onclick=()=>stepMonth(-1); $('#mv-next').onclick=()=>stepMonth(1);
 $('#mv-prevy').onclick=()=>stepMonth(-W().calendar.months.length); $('#mv-nexty').onclick=()=>stepMonth(W().calendar.months.length);
 
@@ -1897,6 +1956,9 @@ document.addEventListener('keydown',e=>{
   const typing=/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement||{}).tagName);
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z' && !typing){ e.preventDefault(); undo(); return; }
   if(typing || e.ctrlKey || e.metaKey || e.altKey) return;
+  const dm=/^(?:Digit|Numpad)([1-9])$/.exec(e.code||'');
+  if(dm){ e.preventDefault(); if(e.shiftKey) saveBookmark(dm[1]); else gotoBookmark(dm[1]); return; }
+  if(e.key==='Backspace'){ e.preventDefault(); goBack(); return; }
   const k=e.key, month=S.mode==='month';
   if(k==='n'||k==='N'){ e.preventDefault(); openEventEditor(null); }
   else if(k==='m'||k==='M') setMode(month?'timeline':'month');
